@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>FlexCompanion</AssemblyName>
+    <RootNamespace>FlexCompanion</RootNamespace>
+    <Version>0.6.0</Version>
+    <ApplicationIcon>Assets\FlexCompanionIcon.ico</ApplicationIcon>
+    <Product>Flex Companion</Product>
+    <Description>Open-source FLEX radio companion controller with native station tools</Description>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <Resource Include="Assets\FlexCompanionIcon.png" />
+    <Content Include="Assets\FlexCompanionIcon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="LICENSE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NOTICE.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

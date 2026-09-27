@@ -1,0 +1,265 @@
+<Window x:Class="FlexCompanion.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:FlexCompanion.Views"
+        Title="Flex Companion" MinWidth="560" MinHeight="520"
+        Icon="Assets/FlexCompanionIcon.png"
+        WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource Bg0Brush}"
+        Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" FontSize="12"
+        Topmost="{Binding AlwaysOnTop}">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="36" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0"/>
+    </WindowChrome.WindowChrome>
+
+    <Border x:Name="RootBorder" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+        <Grid>
+            <!-- Background: AetherSDR gradient, optional wallpaper, dim layer -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#141C2A" Offset="0"/>
+                        <GradientStop Color="#0F0F1A" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Image Source="{Binding WallpaperImage}" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Rectangle Fill="#0F0F1A" Opacity="{Binding WallpaperDim}"/>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="36"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title bar -->
+                <Border Background="#CC0B0F18" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1">
+                    <DockPanel LastChildFill="False">
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Ellipse Width="10" Height="10" Fill="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
+                            <TextBlock Text="FLEX COMPANION" FontWeight="Bold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" ToolTip="Minimise"
+                                    Click="OnMinimize" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Button x:Name="MaxButton" Style="{StaticResource CaptionButton}" Content="&#xE922;" ToolTip="Maximise"
+                                    Click="OnMaximize" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Button Style="{StaticResource CaptionClose}" Content="&#xE8BB;" ToolTip="Close"
+                                    Click="OnClose" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        </StackPanel>
+
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <ToggleButton Content="Sidebar" IsChecked="{Binding ShowSidebar}" Padding="10,3" Margin="3,0"
+                                          WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <ToggleButton Content="Dual radio" IsChecked="{Binding DualMode}" Padding="10,3" Margin="3,0"
+                                          WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <ToggleButton Content="On top" IsChecked="{Binding AlwaysOnTop}" Padding="10,3" Margin="3,0"
+                                          WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <ToggleButton Content="Network saver" IsChecked="{Binding NetworkSaver}" Padding="10,3" Margin="3,0"
+                                          ToolTip="Cuts Companion traffic and rendering load: selective meters, 24 kHz maximum DAX IQ, 10 Hz UI refresh. Useful with two radios or over Wi-Fi/VPN."
+                                          WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Button Content="About" Padding="10,3" Margin="10,0,3,0"
+                                    Click="OnAbout" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Button Content="Wallpaper…" Command="{Binding ChooseWallpaperCommand}" Padding="10,3" Margin="3,0,3,0"
+                                    WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Button Content="Clear" Command="{Binding ClearWallpaperCommand}" Padding="8,3" Margin="3,0"
+                                    WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <TextBlock Text="Dim" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <Slider Width="80" Minimum="0" Maximum="0.95" SmallChange="0.05" LargeChange="0.1"
+                                    Value="{Binding WallpaperDim}" VerticalAlignment="Center"
+                                    WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Body -->
+                <Grid Grid.Row="1" Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Sidebar -->
+                    <ScrollViewer Width="330" Margin="0,0,10,0" VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding ShowSidebar, Converter={StaticResource BoolVis}}">
+                        <StackPanel>
+                            <!-- Radios -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="Rescan" Command="{Binding RescanCommand}" Padding="10,3"/>
+                                        <TextBlock Text="RADIOS" Style="{StaticResource Section}" VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding DiscoveryText}" Style="{StaticResource Hint}" Margin="0,4,0,6" TextWrapping="Wrap"/>
+                                    <ListBox ItemsSource="{Binding Discovery.Radios}" SelectedItem="{Binding SelectedRadio}"
+                                             MinHeight="70" MaxHeight="190">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="2,3">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Detail}" Foreground="{StaticResource TextMuteBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <UniformGrid Columns="2" Margin="0,6,0,0">
+                                        <Button Content="Connect to A" Command="{Binding ConnectSelectedCommand}" CommandParameter="A" Margin="0,0,3,0"/>
+                                        <Button Content="Connect to B" Command="{Binding ConnectSelectedCommand}" CommandParameter="B" Margin="3,0,0,0"/>
+                                    </UniformGrid>
+
+                                    <TextBlock Text="MANUAL (IP or IP:port)" Style="{StaticResource Section}" Margin="0,12,0,4"/>
+                                    <TextBox Text="{Binding ManualIp, UpdateSourceTrigger=PropertyChanged}" ToolTip="e.g. 192.168.1.50 — use this across VPN/subnets where broadcast discovery can't reach"/>
+                                    <UniformGrid Columns="2" Margin="0,6,0,0">
+                                        <Button Content="Connect to A" Command="{Binding ConnectManualCommand}" CommandParameter="A" Margin="0,0,3,0"/>
+                                        <Button Content="Connect to B" Command="{Binding ConnectManualCommand}" CommandParameter="B" Margin="3,0,0,0"/>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Native station tools (FRStack replacement) -->
+                            <Border Style="{StaticResource Card}" Margin="0,10,0,0" DataContext="{Binding Station}">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <ComboBox DockPanel.Dock="Right" Width="54" SelectedValuePath="Content"
+                                                  SelectedValue="{Binding TargetSlot, Mode=TwoWay}" ToolTip="Radio controlled by station tools">
+                                            <ComboBoxItem Content="A"/><ComboBoxItem Content="B"/>
+                                        </ComboBox>
+                                        <TextBlock Text="STATION" Style="{StaticResource Section}" VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <TextBlock Text="QUICK RADIO" Style="{StaticResource Section}" Margin="0,10,0,4"/>
+                                    <WrapPanel>
+                                        <Button Content="160" Command="{Binding BandCommand}" CommandParameter="160" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="80" Command="{Binding BandCommand}" CommandParameter="80" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="40" Command="{Binding BandCommand}" CommandParameter="40" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="20" Command="{Binding BandCommand}" CommandParameter="20" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="17" Command="{Binding BandCommand}" CommandParameter="17" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="15" Command="{Binding BandCommand}" CommandParameter="15" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="12" Command="{Binding BandCommand}" CommandParameter="12" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="10" Command="{Binding BandCommand}" CommandParameter="10" Margin="0,0,3,3" Padding="6,3"/>
+                                        <Button Content="6" Command="{Binding BandCommand}" CommandParameter="6" Margin="0,0,3,3" Padding="6,3"/>
+                                    </WrapPanel>
+                                    <WrapPanel Margin="0,3,0,0">
+                                        <Button Content="LSB" Command="{Binding ModeCommand}" CommandParameter="LSB" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="USB" Command="{Binding ModeCommand}" CommandParameter="USB" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="CW" Command="{Binding ModeCommand}" CommandParameter="CW" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="DIGU" Command="{Binding ModeCommand}" CommandParameter="DIGU" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="ATU" Command="{Binding AtuCommand}" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="BYP" Command="{Binding AtuBypassCommand}" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="TUNE" Command="{Binding TuneCommand}" Margin="0,0,3,3" Padding="7,3"/>
+                                        <Button Content="MOX" Command="{Binding MoxCommand}" Margin="0,0,3,3" Padding="7,3"/>
+                                    </WrapPanel>
+
+                                    <TextBlock Text="AMPLIFIER" Style="{StaticResource Section}" Margin="0,10,0,4"/>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="{Binding AmpOperateLabel}" Command="{Binding AmpOperateCommand}" Padding="8,3" Margin="6,0,0,0"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding RadioAmpText}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding RadioAmpIp}" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,5,0,0">
+                                        <Button DockPanel.Dock="Right" Content="Connect" Command="{Binding PgxlConnectCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <Button DockPanel.Dock="Right" Content="Off" Command="{Binding PgxlDisconnectCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <TextBox Text="{Binding PgxlHost, UpdateSourceTrigger=LostFocus}" ToolTip="Power Genius XL IP. Blank uses IP reported by the FLEX radio."/>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding PgxlStatus}" Style="{StaticResource Hint}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                    <UniformGrid Columns="3" Margin="0,5,0,0">
+                                        <TextBlock Text="{Binding AmpPowerText}" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding AmpSwrText}" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding AmpCurrentText}" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding AmpVddText}" Style="{StaticResource Hint}"/>
+                                        <TextBlock Text="{Binding AmpVacText}" Style="{StaticResource Hint}"/>
+                                        <TextBlock Text="{Binding AmpTempText}" Style="{StaticResource Hint}"/>
+                                    </UniformGrid>
+                                    <TextBlock Text="{Binding AmpAlert}" Foreground="{StaticResource RedBrush}" Margin="0,3,0,0" TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="DX CLUSTER" Style="{StaticResource Section}" Margin="0,10,0,4"/>
+                                    <TextBox Text="{Binding DxClusterHost, UpdateSourceTrigger=LostFocus}" ToolTip="DX Spider / AR-Cluster / CC Cluster hostname"/>
+                                    <DockPanel Margin="0,4,0,0">
+                                        <Button DockPanel.Dock="Right" Content="Connect" Command="{Binding DxConnectCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <Button DockPanel.Dock="Right" Content="Off" Command="{Binding DxDisconnectCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <TextBox Text="{Binding DxClusterCallsign, UpdateSourceTrigger=LostFocus}" ToolTip="Your cluster login callsign"/>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding DxStatus}" Style="{StaticResource Hint}" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                    <ListBox ItemsSource="{Binding Spots}" Margin="0,5,0,0" MaxHeight="160" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="0,1">
+                                                    <Button DockPanel.Dock="Right" Content="Tune" Padding="6,1" Margin="5,0,0,0"
+                                                            Command="{Binding DataContext.TuneSpotCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <TextBlock Width="72" Text="{Binding Call}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Width="86" Text="{Binding Frequency}" Foreground="{StaticResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding Comment}" Foreground="{StaticResource TextMuteBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+
+                                    <TextBlock Text="PROFILES / MEMORIES / MACROS" Style="{StaticResource Section}" Margin="0,10,0,4"/>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="Load" Command="{Binding LoadProfileCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <ComboBox DockPanel.Dock="Right" Width="70" SelectedValuePath="Content" SelectedValue="{Binding ProfileType}" Margin="5,0,0,0">
+                                            <ComboBoxItem Content="global"/><ComboBoxItem Content="tx"/><ComboBoxItem Content="mic"/>
+                                        </ComboBox>
+                                        <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}" ToolTip="Radio profile name"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,4,0,0">
+                                        <Button DockPanel.Dock="Right" Content="Apply memory" Command="{Binding ApplyMemoryCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <TextBox Text="{Binding MemoryIndex, UpdateSourceTrigger=LostFocus}" ToolTip="FLEX radio memory index (memory apply &lt;index&gt;)"/>
+                                    </DockPanel>
+                                    <ItemsControl ItemsSource="{Binding Macros}" Margin="0,5,0,0">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding Label}" Margin="0,0,4,4" Padding="8,3"
+                                                        Command="{Binding DataContext.RunMacroCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="RAW FLEX API" Style="{StaticResource Section}" Margin="0,8,0,4"/>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="Send" Command="{Binding SendRawCommand}" Padding="8,3" Margin="5,0,0,0"/>
+                                        <TextBox Text="{Binding RawCommand, UpdateSourceTrigger=PropertyChanged}" ToolTip="Raw FLEX API command"/>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding Status}" Style="{StaticResource Hint}" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding LicenseSummary}" Style="{StaticResource Hint}" Margin="0,5,0,0" TextWrapping="Wrap"
+                                               ToolTip="Feature reports are informational. Unknown entitlement fails open; explicit radio refusals still win."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="ABOUT" Style="{StaticResource Section}" VerticalAlignment="Center"/>
+                                        <Button DockPanel.Dock="Right" Content="Open" Padding="10,3" Click="OnAbout"/>
+                                    </DockPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Image Source="Assets/FlexCompanionIcon.png" Width="36" Height="36" Margin="0,0,10,0"/>
+                                        <StackPanel>
+                                            <TextBlock Text="Flex Companion" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Created by Craig Magee M9XDT · GPLv3" Style="{StaticResource Hint}"/>
+                                            <TextBlock Text="With AetherSDR acknowledgement" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Radio panels -->
+                    <Grid Grid.Column="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition x:Name="ColB" Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <v:RadioPanel DataContext="{Binding SlotA}"/>
+                        <v:RadioPanel x:Name="PanelB" Grid.Column="1" Margin="10,0,0,0" DataContext="{Binding SlotB}"/>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
