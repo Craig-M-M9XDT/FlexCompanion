@@ -109,7 +109,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="96"/>
                             </Grid.ColumnDefinitions>
-                            <c:AnalogMeter Height="118" MaxWidth="320" HorizontalAlignment="Stretch"
+                            <c:AnalogMeter Height="128" MaxWidth="440" HorizontalAlignment="Stretch"
                                            Minimum="{Binding DialMin}" Maximum="{Binding DialMax}" RedFrom="{Binding DialRed}"
                                            ScaleLabels="{Binding DialScale}" Title="{Binding DialTitle}"
                                            IsTransmit="{Binding IsTransmitting}" Value="{Binding DialValue}"/>
@@ -178,7 +178,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="142"/>
                             </Grid.ColumnDefinitions>
-                            <c:MultiAnalogMeter Height="126" MaxWidth="340" HorizontalAlignment="Stretch"
+                            <c:MultiAnalogMeter Height="134" MaxWidth="460" HorizontalAlignment="Stretch"
                                                 Value1="{Binding MultiValue1}" Minimum1="{Binding MultiSpec1.Min}" Maximum1="{Binding MultiSpec1.Max}" RedFrom1="{Binding MultiSpec1.Red}" Label1="{Binding MultiSpec1.Key}"
                                                 Value2="{Binding MultiValue2}" Minimum2="{Binding MultiSpec2.Min}" Maximum2="{Binding MultiSpec2.Max}" RedFrom2="{Binding MultiSpec2.Red}" Label2="{Binding MultiSpec2.Key}"
                                                 Value3="{Binding MultiValue3}" Minimum3="{Binding MultiSpec3.Min}" Maximum3="{Binding MultiSpec3.Max}" RedFrom3="{Binding MultiSpec3.Red}" Label3="{Binding MultiSpec3.Key}"/>

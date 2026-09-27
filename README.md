@@ -8,9 +8,9 @@ Flex Companion is a compact Windows companion for FLEX-6000, FLEX-8000 and Auror
 
 Each radio slot has four persistent meter layouts:
 
-- **Simple Analogue** — the classic automatic RX S-meter / selectable TX meter.
+- **Simple Analogue** — a wide automatic RX S-meter / selectable TX meter with moving-needle ballistics and delayed-release peak hold.
 - **Digital Select** — RX, power and SWR bars plus one selectable TX measurement.
-- **Multi Analogue** — one compound dial with three colour-coded needles. Each needle has its own scale and can independently show Power, SWR, Processor, Mic, Vdd, Current or PA Temperature.
+- **Multi Analogue** — one wide compound dial with three colour-coded needles and independent peak markers. Each needle has its own scale and can independently show Power, SWR, Processor, Mic, Vdd, Current or PA Temperature.
 - **Digital Multimeter** — RX plus all seven TX measurements together in a compact eight-tile display.
 
 Meter presentation remains driven by incoming FLEX VITA meter packets. Updates are coalesced to the latest packet, and optional TX telemetry is subscribed only when the selected layout displays it.
