@@ -171,17 +171,21 @@ public sealed class MultiAnalogMeter : FrameworkElement
     DrawingGroup BuildFace(double w, double h)
     {
         var group = new DrawingGroup();
-        using var dc = group.Open();
-        var rect = new Rect(0.5, 0.5, w - 1, h - 1);
-        dc.DrawRoundedRectangle(FaceBrush, BezelPen, rect, 5, 5);
-        dc.PushClip(new RectangleGeometry(rect, 5, 5));
-        double radius = Math.Min(h * 1.05, (w / 2 - 18) / Math.Sin(HalfSweepDeg * Math.PI / 180));
-        var pivot = new Point(w / 2, 16 + radius);
-        double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-        DrawTrack(dc, pivot, radius - 13, Minimum1, Maximum1, RedFrom1, Label1, OrangePen, dpi);
-        DrawTrack(dc, pivot, radius - 27, Minimum2, Maximum2, RedFrom2, Label2, GreenPen, dpi);
-        DrawTrack(dc, pivot, radius - 41, Minimum3, Maximum3, RedFrom3, Label3, CyanPen, dpi);
-        dc.Pop();
+        // Close the DrawingContext before freezing the cache. Freezing while Open()
+        // is still active throws on every render and can create an error-dialog loop.
+        using (var dc = group.Open())
+        {
+            var rect = new Rect(0.5, 0.5, w - 1, h - 1);
+            dc.DrawRoundedRectangle(FaceBrush, BezelPen, rect, 5, 5);
+            dc.PushClip(new RectangleGeometry(rect, 5, 5));
+            double radius = Math.Min(h * 1.05, (w / 2 - 18) / Math.Sin(HalfSweepDeg * Math.PI / 180));
+            var pivot = new Point(w / 2, 16 + radius);
+            double dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            DrawTrack(dc, pivot, radius - 13, Minimum1, Maximum1, RedFrom1, Label1, OrangePen, dpi);
+            DrawTrack(dc, pivot, radius - 27, Minimum2, Maximum2, RedFrom2, Label2, GreenPen, dpi);
+            DrawTrack(dc, pivot, radius - 41, Minimum3, Maximum3, RedFrom3, Label3, CyanPen, dpi);
+            dc.Pop();
+        }
         group.Freeze();
         return group;
     }

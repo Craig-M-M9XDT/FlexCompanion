@@ -7,6 +7,8 @@ namespace FlexCompanion;
 
 public partial class App : Application
 {
+    int _handlingFatalUiException;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -22,12 +24,17 @@ public partial class App : Application
 
         DispatcherUnhandledException += (_, args) =>
         {
+            // A render exception can be raised again immediately if WPF is allowed to
+            // continue painting the same broken visual. Never open an endless stack of
+            // warning dialogs: report the first failure once, then close cleanly.
+            args.Handled = true;
+            if (Interlocked.Exchange(ref _handlingFatalUiException, 1) != 0) return;
             var ex = args.Exception;
             var detail = ex.InnerException is null
                 ? ex.Message
                 : $"{ex.Message}\n\nInner exception: {ex.InnerException.Message}";
-            MessageBox.Show(detail, "Flex Companion", MessageBoxButton.OK, MessageBoxImage.Warning);
-            args.Handled = true;
+            MessageBox.Show($"{detail}\n\nFlex Companion must close.", "Flex Companion", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Shutdown(-1);
         };
 
         var splash = new SplashWindow();
