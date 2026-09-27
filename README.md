@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Assets/FlexCompanionIcon.png" alt="Flex Companion app icon" width="180" />
+</p>
+
 # Flex Companion
 
 Created by **Craig Magee M9XDT**.
