@@ -15,6 +15,13 @@
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
 
+  <!-- The Raspberry Pi/Avalonia application lives in its own project under Pi/.
+       Exclude that source tree from the root WPF project's SDK-default globbing. -->
+  <ItemGroup>
+    <Compile Remove="Pi\**\*.cs" />
+    <Page Remove="Pi\**\*.xaml" />
+    <ApplicationDefinition Remove="Pi\**\*.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\FlexCompanionIcon.png" />
