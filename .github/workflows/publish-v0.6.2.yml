@@ -76,18 +76,47 @@ jobs:
         with:
           path: release-assets
           merge-multiple: true
-      - name: Publish v0.6.2 release
+      - name: Publish clean v0.6.2 release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euxo pipefail
+
+          RELEASE_NOTES=$(cat <<'EOF'
+          Flex Companion v0.6.2
+
+          ## Downloads
+
+          - **Windows x64** — `FlexCompanion-v0.6.2-windows-x64.zip`
+          - **Raspberry Pi / Linux ARM64** — `FlexCompanion-v0.6.2-pi-arm64.tar.gz`
+
+          Both builds are self-contained and do not require a separate .NET runtime.
+
+          The Raspberry Pi build uses Avalonia/.NET 8 with responsive layouts from 800x480 upward, automatic touch support and kiosk mode.
+
+          GPLv3. AetherSDR attribution retained.
+          EOF
+          )
+
           if gh release view v0.6.2 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload v0.6.2 release-assets/* --clobber --repo "$GITHUB_REPOSITORY"
+            for asset in \
+              FlexCompanion-v0.6.2-windows-x64-self-contained.zip \
+              FlexCompanion-v0.6.2-windows-x86-self-contained.zip \
+              FlexCompanion-v0.6.2-SHA256SUMS.txt \
+              FlexCompanion-v0.6.2-windows-x64.zip \
+              FlexCompanion-v0.6.2-pi-arm64.tar.gz; do
+              gh release delete-asset v0.6.2 "$asset" --yes --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+            done
+            gh release edit v0.6.2 \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Flex Companion v0.6.2" \
+              --notes "$RELEASE_NOTES"
+            gh release upload v0.6.2 release-assets/* --repo "$GITHUB_REPOSITORY"
           else
             gh release create v0.6.2 release-assets/* \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
               --title "Flex Companion v0.6.2" \
-              --notes "Flex Companion v0.6.2. Includes the Windows x64 build and the new Raspberry Pi / Linux ARM64 touchscreen build. The Pi build uses Avalonia/.NET 8 with responsive 800x480+ layouts, touch mode and kiosk support. GPLv3; AetherSDR attribution retained."
+              --notes "$RELEASE_NOTES"
           fi
