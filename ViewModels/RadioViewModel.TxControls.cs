@@ -231,7 +231,10 @@ public sealed partial class RadioViewModel
     }
 
     static bool TryInt(Dictionary<string, string> kv, string key, out int value)
-        => kv.TryGetValue(key, out var text) && int.TryParse(text, out value);
+    {
+        value = 0;
+        return kv.TryGetValue(key, out var text) && int.TryParse(text, out value);
+    }
 
     async Task SendTransmitSettingAsync(string key, string value)
     {
