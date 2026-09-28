@@ -35,7 +35,7 @@ The optional Aether source patch is in `AetherBridgePatch/`. It mirrors `RadioMo
 - Contextual DSP error/status messages distinguish unsupported hardware/firmware from temporary mode/state restrictions (for example DIGU notch-filter restrictions), while retaining the raw FLEX error code.
 - Noise-floor scaling, ESC/diversity controls and CW auto tune.
 - One automatic RX/TX meter: RX S-meter while receiving, then the selected TX measurement while transmitting, then back to RX. Analogue/digital presentation is selectable.
-- Optional compact spectrum with selectable width (3–192 kHz), centred on the selected slice with a slice marker. It prefers Aether shared-pan data and falls back to DAX IQ.
+- Optional compact spectrum with selectable width (3–192 kHz), centred on the selected receive passband with a carrier marker. USB/LSB and digital modes are offset to their filter centre; AM/FM stay symmetrical, and narrow selections expand when needed to keep the whole filter visible. It prefers Aether shared-pan data and falls back to DAX IQ.
 - Best AGC-T calibration with slice-specific audio analysis.
 - LAN discovery plus manual IP entry.
 - Two independent radio slots (A/B).

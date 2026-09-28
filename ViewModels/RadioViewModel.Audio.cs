@@ -82,7 +82,7 @@ public sealed partial class RadioViewModel
     public double SpectrumMaxHz { get => _spectrumMaxHz; private set => Set(ref _spectrumMaxHz, value); }
     public double SpectrumSampleRate => _iqRate;
     public bool SpectrumCentered => true;
-    /// <summary>Frequency of the display centre relative to the slice, Hz (0 when centred on the slice).</summary>
+    /// <summary>Frequency of the display centre relative to the slice carrier, in Hz.</summary>
     public double SpectrumCenterOffsetHz { get => _spectrumCenterOffsetHz; private set => Set(ref _spectrumCenterOffsetHz, value); }
     /// <summary>Where the selected slice sits across the display, 0..1 (NaN when outside it).</summary>
     public double SpectrumSliceFraction { get => _spectrumSliceFrac; private set => Set(ref _spectrumSliceFrac, value); }
@@ -99,7 +99,7 @@ public sealed partial class RadioViewModel
             _prefs.FftSpanKhz = value;
             OnPropertyChanged();
             _specAvg = null;
-            SpectrumMaxHz = EffectiveFftSpanKhz * 500.0;
+            SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
             _iq.Configure(ShowFft ? FftSize : 0, LowBandwidthMode ? 20 : 30);
             _ = ApplyIqRateAsync();
         }
@@ -108,15 +108,79 @@ public sealed partial class RadioViewModel
     /// <summary>Displayed span after applying the optional network-saver cap.</summary>
     double EffectiveFftSpanKhz => LowBandwidthMode ? Math.Min(FftSpanKhz, 24.0) : FftSpanKhz;
 
-    /// <summary>Smallest DAX IQ rate whose bandwidth covers the effective span.</summary>
-    int RateForSpan => EffectiveFftSpanKhz switch { <= 24 => 24000, <= 48 => 48000, <= 96 => 96000, _ => 192000 };
+    readonly record struct SpectrumWindow(double CentreOffsetHz, double SpanHz);
+
+    /// <summary>
+    /// Centres the compact FFT on the receive passband, while keeping both the complete
+    /// filter and its carrier marker visible. Reported radio filter edges win; mode
+    /// defaults cover the short interval before slice metadata arrives.
+    /// </summary>
+    static SpectrumWindow CalculateSpectrumWindow(string mode, string? filterLo, string? filterHi, double requestedSpanHz)
+    {
+        (double Lo, double Hi) fallback = mode.ToUpperInvariant() switch
+        {
+            "USB" or "DIGU" or "FDVU" => (100, 3000),
+            "LSB" or "DIGL" or "RTTY" or "FDVL" => (-3000, -100),
+            "AM" or "SAM" => (-3000, 3000),
+            "FM" => (-8000, 8000),
+            "NFM" => (-6000, 6000),
+            "CW" or "CWL" or "CWU" or "CWR" => (-500, 500),
+            _ => (0, 0),
+        };
+
+        double lo = double.TryParse(filterLo, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedLo) ? parsedLo : fallback.Lo;
+        double hi = double.TryParse(filterHi, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedHi) ? parsedHi : fallback.Hi;
+        if (hi < lo) (lo, hi) = (hi, lo);
+
+        double centre = (lo + hi) * 0.5;
+        double filterWidth = Math.Max(0, hi - lo);
+        double halfExtent = Math.Max(Math.Max(Math.Abs(lo - centre), Math.Abs(hi - centre)), Math.Abs(centre));
+        double margin = Math.Max(400, filterWidth * 0.12);
+        double span = Math.Max(Math.Max(requestedSpanHz, 1000), halfExtent * 2 + margin);
+        return new SpectrumWindow(centre, span);
+    }
+
+    SpectrumWindow SpectrumWindowFor(double requestedSpanHz)
+    {
+        var slice = SelectedSlice;
+        return CalculateSpectrumWindow(slice?.Mode ?? "",
+            slice?.State.GetValueOrDefault("filter_lo"),
+            slice?.State.GetValueOrDefault("filter_hi"), requestedSpanHz);
+    }
+
+    SpectrumWindow AetherSpectrumWindow => SpectrumWindowFor(FftSpanKhz * 1000.0);
+
+    SpectrumWindow DaxSpectrumWindow
+    {
+        get
+        {
+            var window = SpectrumWindowFor(EffectiveFftSpanKhz * 1000.0);
+            return LowBandwidthMode && window.SpanHz > 24000 ? window with { SpanHz = 24000 } : window;
+        }
+    }
+
+    /// <summary>Smallest DAX IQ rate whose bandwidth covers the passband-centred window.</summary>
+    int RateForSpan
+    {
+        get
+        {
+            if (LowBandwidthMode) return 24000;
+            return (DaxSpectrumWindow.SpanHz / 1000.0) switch
+            {
+                <= 24 => 24000,
+                <= 48 => 48000,
+                <= 96 => 96000,
+                _ => 192000,
+            };
+        }
+    }
 
     /// <summary>FFT length giving roughly 512 bins across the visible span (1024..8192).</summary>
     int FftSize
     {
         get
         {
-            double want = _iqRate / (EffectiveFftSpanKhz * 1000.0) * 512;
+            double want = _iqRate / DaxSpectrumWindow.SpanHz * 512;
             int n = 1024;
             while (n < want && n < 8192) n <<= 1;
             return n;
@@ -152,7 +216,7 @@ public sealed partial class RadioViewModel
         _iqLost = false;            // an explicit toggle may retake a channel another client cleared
         _lastAetherPanSequence = 0;
         if (ShowFft && _fftEnabledAt == DateTime.MinValue) _fftEnabledAt = DateTime.UtcNow;
-        SpectrumMaxHz = EffectiveFftSpanKhz * 500.0;
+        SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
         _iq.Configure(ShowFft ? FftSize : 0, LowBandwidthMode ? 20 : 30);
         if (!ShowFft) { Spectrum = null; _specAvg = null; _lastIqSpectrumSequence = 0; }
         _ = EnsureIqStreamAsync();
@@ -299,7 +363,6 @@ public sealed partial class RadioViewModel
         if (_iqStreamId != 0 && !_aetherTakeoverBusy) _ = StopDaxIqForAetherAsync();
         SpectrumStatus = "Aether shared pan · source-paced radio FFT · no extra DAX IQ stream";
         _specAvg = null; // radio/Aether pan averaging is already baked into these bins
-        SpectrumMaxHz = FftSpanKhz * 500.0;
         Spectrum = ResliceAetherPan(aether);
     }
 
@@ -318,12 +381,16 @@ public sealed partial class RadioViewModel
         {
             // Metadata can trail a frame briefly during tune/reconnect. Keep a smooth trace
             // rather than dropping the frame: resample the whole source to the tile width.
+            SpectrumMaxHz = FftSpanKhz * 500.0;
+            SpectrumCenterOffsetHz = 0;
+            SpectrumSliceFraction = double.NaN;
             return ResampleLinear(source, outputBins, 0, source.Length - 1, -160f);
         }
 
-        double wantedBandwidthMhz = FftSpanKhz / 1000.0;
+        var window = AetherSpectrumWindow;
+        double wantedBandwidthMhz = window.SpanHz / 1e6;
         double panLowMhz = panCenterMhz - panBandwidthMhz * 0.5;
-        double wantLowMhz = sliceMhz - wantedBandwidthMhz * 0.5;
+        double wantLowMhz = sliceMhz + window.CentreOffsetHz / 1e6 - wantedBandwidthMhz * 0.5;
 
         float floor = float.PositiveInfinity;
         for (int i = 0; i < source.Length; i++)
@@ -348,8 +415,10 @@ public sealed partial class RadioViewModel
             output[i] = (float)(source[i0] * (1.0 - f) + source[i1] * f);
         }
 
-        SpectrumCenterOffsetHz = 0;
-        SpectrumSliceFraction = 0.5;
+        SpectrumMaxHz = window.SpanHz * 0.5;
+        SpectrumCenterOffsetHz = window.CentreOffsetHz;
+        double marker = 0.5 - window.CentreOffsetHz / window.SpanHz;
+        SpectrumSliceFraction = marker is >= 0 and <= 1 ? marker : double.NaN;
         return output;
     }
 
@@ -519,7 +588,7 @@ public sealed partial class RadioViewModel
         _iqPanAssigned = assigned;
         _iqRate = wantRate;
         OnPropertyChanged(nameof(SpectrumSampleRate));
-        SpectrumMaxHz = EffectiveFftSpanKhz * 500.0;
+        SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
         SpectrumStatus = SpectrumStatusText(ch);
     }
 
@@ -558,14 +627,15 @@ public sealed partial class RadioViewModel
 
     string SpectrumStatusText(int channel)
     {
+        double shownKhz = DaxSpectrumWindow.SpanHz / 1000.0;
         if (!LowBandwidthMode || FftSpanKhz <= 24)
-            return $"DAX IQ {channel} · {EffectiveFftSpanKhz:0} kHz span";
+            return $"DAX IQ {channel} · {shownKhz:0.#} kHz span";
         return $"DAX IQ {channel} · Network saver 24 kHz (requested {FftSpanKhz:0} kHz)";
     }
 
     void OnBandwidthModeChanged()
     {
-        SpectrumMaxHz = EffectiveFftSpanKhz * 500.0;
+        SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
         _specAvg = null;
         _lastIqSpectrumSequence = 0;
         _lastAetherPanSequence = 0;
@@ -646,14 +716,16 @@ public sealed partial class RadioViewModel
     }
 
     /// <summary>
-    /// Cuts the visible span out of the full fft-shifted IQ spectrum, centred on the
-    /// selected slice when it lies inside the IQ bandwidth (DAX IQ is centred on the pan).
+    /// Cuts the passband-centred window out of the full fft-shifted IQ spectrum.
+    /// DAX IQ itself is centred on the pan, so this also compensates for slice position.
     /// </summary>
     float[] CropToSpan(float[] full)
     {
         int n = full.Length;
         double binHz = (double)_iqRate / n;
-        int visible = Math.Clamp((int)Math.Round(EffectiveFftSpanKhz * 1000.0 / binHz), 16, n);
+        var window = DaxSpectrumWindow;
+        int visible = Math.Clamp((int)Math.Round(window.SpanHz / binHz), 16, n);
+        SpectrumMaxHz = visible * binHz * 0.5;
 
         double sliceOffsetHz = 0;       // slice frequency relative to the pan centre
         bool haveSlice = false;
@@ -665,7 +737,8 @@ public sealed partial class RadioViewModel
             haveSlice = Math.Abs(sliceOffsetHz) < _iqRate / 2.0;
         }
 
-        int centreBin = n / 2 + (int)Math.Round((haveSlice ? sliceOffsetHz : 0) / binHz);
+        double wantedCentreHz = haveSlice ? sliceOffsetHz + window.CentreOffsetHz : 0;
+        int centreBin = n / 2 + (int)Math.Round(wantedCentreHz / binHz);
         int start = Math.Clamp(centreBin - visible / 2, 0, n - visible);
         var outp = new float[visible];
         Array.Copy(full, start, outp, 0, visible);
@@ -943,7 +1016,7 @@ public sealed partial class RadioViewModel
         _lastAetherPanSequence = 0;
         if (ShowFft) _fftEnabledAt = DateTime.UtcNow;
         _iq.Configure(ShowFft ? FftSize : 0, LowBandwidthMode ? 20 : 30);
-        SpectrumMaxHz = EffectiveFftSpanKhz * 500.0;
+        SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
         RaiseAgcProps();
         _ = EnsureIqStreamAsync();
         _ = EnsureAudioStreamAsync();
@@ -953,6 +1026,15 @@ public sealed partial class RadioViewModel
     {
         if (kv.ContainsKey("dax")) _ = EnsureAudioStreamAsync();
         if (kv.ContainsKey("pan")) _ = EnsureIqStreamAsync();
+        if (kv.ContainsKey("mode") || kv.ContainsKey("filter_lo") || kv.ContainsKey("filter_hi"))
+        {
+            _specAvg = null;
+            _lastIqSpectrumSequence = 0;
+            _lastAetherPanSequence = 0;
+            SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
+            _iq.Configure(ShowFft ? FftSize : 0, LowBandwidthMode ? 20 : 30);
+            _ = ApplyIqRateAsync();
+        }
         if (kv.Keys.Any(k => k.StartsWith("agc", StringComparison.OrdinalIgnoreCase) || k is "nr" or "nrl" or "nrs" or "rnn" or "nrf" or "nb" or "anf" or "anfl" or "anft"))
             RaiseAgcProps();
     }
