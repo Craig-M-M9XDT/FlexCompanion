@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:FlexCompanion.Controls"
+             x:Class="FlexCompanion.Views.RadioPanel">
+  <Border Classes="radioCard" Padding="10" CornerRadius="8" BorderThickness="1">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="7">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+        <StackPanel>
+          <TextBlock Text="{Binding RadioTitle}" FontWeight="Bold" FontSize="16" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Text="{Binding StatusText}" Opacity="0.68" FontSize="11" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <Button Grid.Column="1" Content="Reconnect" Command="{Binding ReconnectCommand}" IsVisible="{Binding IsDisconnected}"/>
+        <Button Grid.Column="2" Content="Disconnect" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}"/>
+      </Grid>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,*,Auto" ColumnSpacing="7" IsVisible="{Binding IsConnected}">
+        <ComboBox ItemsSource="{Binding Stations}" SelectedItem="{Binding SelectedStation, Mode=TwoWay}"/>
+        <ComboBox Grid.Column="1" ItemsSource="{Binding Slices}" SelectedItem="{Binding SelectedSlice, Mode=TwoWay}"/>
+        <ToggleSwitch Grid.Column="2" Content="Follow" IsChecked="{Binding FollowActiveSlice, Mode=TwoWay}"/>
+      </Grid>
+
+      <Border Grid.Row="2" Padding="8" CornerRadius="6" Background="#0A101A" IsVisible="{Binding IsConnected}">
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="{Binding DialText}" FontSize="30" FontWeight="Bold" Foreground="#E6F0FA"/>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding DialTitle}" FontWeight="Bold" Foreground="#00B4D8"/>
+              <TextBlock Text="{Binding DialSub}" Opacity="0.68"/>
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+            <TextBlock Text="{Binding PowerText}" FontWeight="Bold" HorizontalAlignment="Right"/>
+            <TextBlock Text="{Binding SwrText}" Opacity="0.78" HorizontalAlignment="Right"/>
+          </StackPanel>
+          <ctrl:MeterBar Grid.Row="1" Grid.ColumnSpan="2" Height="15"
+                         Minimum="{Binding DialMin}" Maximum="{Binding DialMax}"
+                         RedStart="{Binding DialRed}" Value="{Binding DialValue}"/>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="3" RowDefinitions="Auto,Auto" IsVisible="{Binding IsConnected}">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
+          <ToggleSwitch Content="FFT" IsChecked="{Binding ShowFft, Mode=TwoWay}"/>
+          <ComboBox Grid.Column="1" Width="88" ItemsSource="{Binding FftSpans}" SelectedItem="{Binding FftSpanKhz, Mode=TwoWay}"/>
+          <TextBlock Grid.Column="2" Text="{Binding SpectrumStatus}" VerticalAlignment="Center" Opacity="0.65" FontSize="11" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Grid.Column="3" Text="{Binding SliceModeText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+        </Grid>
+        <ctrl:SpectrumView Grid.Row="1" Height="112" Margin="0,5,0,0" IsVisible="{Binding ShowFft}"
+                           Spectrum="{Binding Spectrum}" MaxHz="{Binding SpectrumMaxHz}"
+                           SampleRate="{Binding SpectrumSampleRate}" Centered="{Binding SpectrumCentered}"
+                           MarkerFraction="{Binding SpectrumSliceFraction}"/>
+      </Grid>
+
+      <TextBlock Grid.Row="4" Text="{Binding LastMessage}" Foreground="#FFB84D" TextWrapping="Wrap" FontSize="11" MaxHeight="44"/>
+
+      <TabControl Grid.Row="5" IsVisible="{Binding IsConnected}">
+        <TabItem Header="DSP">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8" Margin="2,8,2,2">
+              <TextBlock Text="NOISE REDUCTION" FontWeight="Bold" Foreground="#8EA8C0"/>
+              <ItemsControl ItemsSource="{Binding NoiseReduction}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="72,Auto,*,54" ColumnSpacing="7" Margin="0,3">
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="{Binding Tooltip}"/>
+                      <ToggleSwitch Grid.Column="1" IsVisible="{Binding HasToggle}" IsChecked="{Binding IsOn, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <Slider Grid.Column="2" IsVisible="{Binding HasLevel}" Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Level, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <TextBlock Grid.Column="3" Text="{Binding LevelText}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <TextBlock Text="BLANKER / NOTCH" FontWeight="Bold" Foreground="#8EA8C0" Margin="0,4,0,0"/>
+              <ItemsControl ItemsSource="{Binding Blanker}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="72,Auto,*,54" ColumnSpacing="7" Margin="0,3">
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <Slider Grid.Column="2" IsVisible="{Binding HasLevel}" Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Level, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <TextBlock Grid.Column="3" Text="{Binding LevelText}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ItemsControl ItemsSource="{Binding Notch}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="72,Auto,*,54" ColumnSpacing="7" Margin="0,3">
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <Slider Grid.Column="2" IsVisible="{Binding HasLevel}" Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Level, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <TextBlock Grid.Column="3" Text="{Binding LevelText}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="ESC / CW">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8" Margin="2,8,2,2">
+              <TextBlock Text="{Binding EscNote}" TextWrapping="Wrap" Opacity="0.68"/>
+              <ItemsControl ItemsSource="{Binding Esc}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="72,Auto,*,54" ColumnSpacing="7" Margin="0,3">
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                      <ToggleSwitch Grid.Column="1" IsVisible="{Binding HasToggle}" IsChecked="{Binding IsOn, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <Slider Grid.Column="2" IsVisible="{Binding HasLevel}" Minimum="{Binding Min}" Maximum="{Binding Max}" Value="{Binding Level, Mode=TwoWay}" IsEnabled="{Binding IsReported}"/>
+                      <TextBlock Grid.Column="3" Text="{Binding LevelText}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <WrapPanel>
+                <Button Content="CW AUTO TUNE" Command="{Binding AutoTuneOnceCommand}" Margin="0,0,8,6"/>
+                <ToggleSwitch Content="Intermittent" IsChecked="{Binding AutoTuneIntermittent, Mode=TwoWay}"/>
+              </WrapPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="AGC-T">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8" Margin="2,8,2,2">
+              <TextBlock Text="{Binding AgcModeText}" TextWrapping="Wrap"/>
+              <Grid ColumnDefinitions="*,58" ColumnSpacing="8">
+                <Slider Minimum="0" Maximum="100" Value="{Binding AgcValue, Mode=TwoWay}"/>
+                <TextBlock Grid.Column="1" Text="{Binding AgcValueText}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+              </Grid>
+              <TextBlock Text="{Binding AgcResultText}" TextWrapping="Wrap" Opacity="0.74"/>
+              <WrapPanel>
+                <Button Content="Find best AGC-T" Command="{Binding AgcAutoCommand}" Margin="0,0,8,6"/>
+                <Button Content="Keep" Command="{Binding AgcKeepCommand}" Margin="0,0,8,6"/>
+                <Button Content="Restore" Command="{Binding AgcRestoreCommand}" Margin="0,0,8,6"/>
+              </WrapPanel>
+              <TextBlock Text="{Binding AudioStatus}" Opacity="0.65"/>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+      </TabControl>
+
+      <TextBlock Grid.Row="5" Text="{Binding IdleHint}" IsVisible="{Binding IsDisconnected}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Opacity="0.55"/>
+    </Grid>
+  </Border>
+</UserControl>

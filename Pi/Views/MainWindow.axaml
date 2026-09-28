@@ -1,0 +1,205 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:FlexCompanion.Views"
+        x:Class="FlexCompanion.Views.MainWindow"
+        Title="Flex Companion"
+        Width="1280" Height="800"
+        MinWidth="640" MinHeight="420"
+        Background="#080C14">
+  <Window.Styles>
+    <Style Selector="Border.radioCard">
+      <Setter Property="Background" Value="#111923"/>
+      <Setter Property="BorderBrush" Value="#304050"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="34"/>
+      <Setter Property="Padding" Value="10,6"/>
+    </Style>
+    <Style Selector="ToggleSwitch">
+      <Setter Property="MinHeight" Value="34"/>
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="MinHeight" Value="34"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="MinHeight" Value="34"/>
+    </Style>
+    <Style Selector="Slider">
+      <Setter Property="MinHeight" Value="32"/>
+    </Style>
+
+    <!-- Touch is enabled automatically after the first touch pointer event. -->
+    <Style Selector="Window.touch Button">
+      <Setter Property="MinHeight" Value="48"/>
+      <Setter Property="Padding" Value="14,10"/>
+    </Style>
+    <Style Selector="Window.touch ToggleSwitch">
+      <Setter Property="MinHeight" Value="48"/>
+    </Style>
+    <Style Selector="Window.touch ComboBox">
+      <Setter Property="MinHeight" Value="48"/>
+    </Style>
+    <Style Selector="Window.touch TextBox">
+      <Setter Property="MinHeight" Value="48"/>
+    </Style>
+    <Style Selector="Window.touch Slider">
+      <Setter Property="MinHeight" Value="48"/>
+    </Style>
+    <Style Selector="Window.touch TabItem">
+      <Setter Property="MinHeight" Value="46"/>
+    </Style>
+
+    <Style Selector="Window.micro TextBlock">
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*" Margin="8" RowSpacing="7">
+    <!-- Header -->
+    <Border Grid.Row="0" Background="#111923" BorderBrush="#304050" BorderThickness="1" CornerRadius="8" Padding="8">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Image Width="34" Height="34" Source="avares://FlexCompanion/Assets/FlexCompanionIcon.png"/>
+          <StackPanel>
+            <TextBlock Text="FLEX COMPANION" FontWeight="Bold" FontSize="17"/>
+            <TextBlock Text="Raspberry Pi / touch build" Opacity="0.62" FontSize="10"/>
+          </StackPanel>
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding DiscoveryText}" VerticalAlignment="Center" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+        <ToggleSwitch Grid.Column="2" Content="Dual" IsChecked="{Binding DualMode, Mode=TwoWay}"/>
+        <ToggleSwitch Grid.Column="3" Content="Saver" IsChecked="{Binding NetworkSaver, Mode=TwoWay}"/>
+        <ToggleSwitch Grid.Column="4" Content="Touch" IsChecked="{Binding TouchMode, Mode=TwoWay}"/>
+        <ToggleSwitch Grid.Column="5" Content="Kiosk" IsChecked="{Binding KioskMode, Mode=TwoWay}"/>
+      </Grid>
+    </Border>
+
+    <!-- Compact connection strip: shown automatically below the desktop breakpoint. -->
+    <Border Grid.Row="1" Background="#111923" BorderBrush="#304050" BorderThickness="1" CornerRadius="8" Padding="7" IsVisible="{Binding CompactMode}">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+        <ComboBox ItemsSource="{Binding Discovery.Radios}" SelectedItem="{Binding SelectedRadio, Mode=TwoWay}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Title}"/>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Grid.Column="1" Content="A" Command="{Binding ConnectSelectedCommand}" CommandParameter="A"/>
+        <Button Grid.Column="2" Content="B" Command="{Binding ConnectSelectedCommand}" CommandParameter="B"/>
+        <Button Grid.Column="3" Content="↻" Command="{Binding RescanCommand}"/>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+      <!-- Full discovery / station panel. Hidden automatically on narrow screens. -->
+      <ScrollViewer Width="278" IsVisible="{Binding WideMode}" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="8">
+          <Border Background="#111923" BorderBrush="#304050" BorderThickness="1" CornerRadius="8" Padding="9">
+            <StackPanel Spacing="7">
+              <TextBlock Text="RADIOS" FontWeight="Bold" Foreground="#8EA8C0"/>
+              <ListBox ItemsSource="{Binding Discovery.Radios}" SelectedItem="{Binding SelectedRadio, Mode=TwoWay}" MaxHeight="250">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Margin="2,4">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                      <TextBlock Text="{Binding Detail}" Opacity="0.62" FontSize="10" TextWrapping="Wrap"/>
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="5">
+                <Button Content="Connect A" Command="{Binding ConnectSelectedCommand}" CommandParameter="A"/>
+                <Button Grid.Column="1" Content="Connect B" Command="{Binding ConnectSelectedCommand}" CommandParameter="B"/>
+                <Button Grid.Column="2" Content="↻" Command="{Binding RescanCommand}"/>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="5">
+                <TextBox Watermark="Manual IP or IP:port" Text="{Binding ManualIp, Mode=TwoWay}"/>
+                <Button Grid.Column="1" Content="A" Command="{Binding ConnectManualCommand}" CommandParameter="A"/>
+                <Button Grid.Column="2" Content="B" Command="{Binding ConnectManualCommand}" CommandParameter="B"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Background="#111923" BorderBrush="#304050" BorderThickness="1" CornerRadius="8" Padding="9">
+            <StackPanel Spacing="7">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBlock Text="QUICK RADIO" FontWeight="Bold" Foreground="#8EA8C0" VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1" Width="68" ItemsSource="{Binding SlotNames}" SelectedItem="{Binding Station.TargetSlot, Mode=TwoWay}"/>
+              </Grid>
+              <WrapPanel>
+                <Button Content="160" Command="{Binding Station.BandCommand}" CommandParameter="160" Margin="0,0,5,5"/>
+                <Button Content="80" Command="{Binding Station.BandCommand}" CommandParameter="80" Margin="0,0,5,5"/>
+                <Button Content="40" Command="{Binding Station.BandCommand}" CommandParameter="40" Margin="0,0,5,5"/>
+                <Button Content="20" Command="{Binding Station.BandCommand}" CommandParameter="20" Margin="0,0,5,5"/>
+                <Button Content="15" Command="{Binding Station.BandCommand}" CommandParameter="15" Margin="0,0,5,5"/>
+                <Button Content="10" Command="{Binding Station.BandCommand}" CommandParameter="10" Margin="0,0,5,5"/>
+                <Button Content="6" Command="{Binding Station.BandCommand}" CommandParameter="6" Margin="0,0,5,5"/>
+              </WrapPanel>
+              <WrapPanel>
+                <Button Content="LSB" Command="{Binding Station.ModeCommand}" CommandParameter="LSB" Margin="0,0,5,5"/>
+                <Button Content="USB" Command="{Binding Station.ModeCommand}" CommandParameter="USB" Margin="0,0,5,5"/>
+                <Button Content="CW" Command="{Binding Station.ModeCommand}" CommandParameter="CW" Margin="0,0,5,5"/>
+                <Button Content="DIGU" Command="{Binding Station.ModeCommand}" CommandParameter="DIGU" Margin="0,0,5,5"/>
+              </WrapPanel>
+              <WrapPanel>
+                <Button Content="ATU" Command="{Binding Station.AtuCommand}" Margin="0,0,5,5"/>
+                <Button Content="BYP" Command="{Binding Station.AtuBypassCommand}" Margin="0,0,5,5"/>
+                <Button Content="TUNE" Command="{Binding Station.TuneCommand}" Margin="0,0,5,5"/>
+                <Button Content="MOX" Command="{Binding Station.MoxCommand}" Margin="0,0,5,5"/>
+              </WrapPanel>
+              <TextBlock Text="{Binding Station.Status}" Opacity="0.65" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Radio area: dual columns on larger screens. -->
+      <Grid Grid.Column="1" IsVisible="{Binding WideMode}" ColumnDefinitions="*,*" ColumnSpacing="8">
+        <views:RadioPanel DataContext="{Binding SlotA}"/>
+        <views:RadioPanel Grid.Column="1" DataContext="{Binding SlotB}" IsVisible="{Binding DualMode}"/>
+      </Grid>
+
+      <!-- Touch/compact layout: one radio per tab so 800x480 remains usable. -->
+      <TabControl Grid.Column="1" IsVisible="{Binding CompactMode}">
+        <TabItem Header="RADIO A">
+          <views:RadioPanel DataContext="{Binding SlotA}"/>
+        </TabItem>
+        <TabItem Header="RADIO B" IsVisible="{Binding DualMode}">
+          <views:RadioPanel DataContext="{Binding SlotB}"/>
+        </TabItem>
+        <TabItem Header="STATION">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="10" Margin="8">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBlock Text="Quick radio controls" FontSize="16" FontWeight="Bold"/>
+                <ComboBox Grid.Column="1" Width="76" ItemsSource="{Binding SlotNames}" SelectedItem="{Binding Station.TargetSlot, Mode=TwoWay}"/>
+              </Grid>
+              <WrapPanel>
+                <Button Content="160" Command="{Binding Station.BandCommand}" CommandParameter="160" Margin="0,0,7,7"/>
+                <Button Content="80" Command="{Binding Station.BandCommand}" CommandParameter="80" Margin="0,0,7,7"/>
+                <Button Content="40" Command="{Binding Station.BandCommand}" CommandParameter="40" Margin="0,0,7,7"/>
+                <Button Content="20" Command="{Binding Station.BandCommand}" CommandParameter="20" Margin="0,0,7,7"/>
+                <Button Content="17" Command="{Binding Station.BandCommand}" CommandParameter="17" Margin="0,0,7,7"/>
+                <Button Content="15" Command="{Binding Station.BandCommand}" CommandParameter="15" Margin="0,0,7,7"/>
+                <Button Content="12" Command="{Binding Station.BandCommand}" CommandParameter="12" Margin="0,0,7,7"/>
+                <Button Content="10" Command="{Binding Station.BandCommand}" CommandParameter="10" Margin="0,0,7,7"/>
+                <Button Content="6" Command="{Binding Station.BandCommand}" CommandParameter="6" Margin="0,0,7,7"/>
+              </WrapPanel>
+              <WrapPanel>
+                <Button Content="LSB" Command="{Binding Station.ModeCommand}" CommandParameter="LSB" Margin="0,0,7,7"/>
+                <Button Content="USB" Command="{Binding Station.ModeCommand}" CommandParameter="USB" Margin="0,0,7,7"/>
+                <Button Content="CW" Command="{Binding Station.ModeCommand}" CommandParameter="CW" Margin="0,0,7,7"/>
+                <Button Content="DIGU" Command="{Binding Station.ModeCommand}" CommandParameter="DIGU" Margin="0,0,7,7"/>
+                <Button Content="ATU" Command="{Binding Station.AtuCommand}" Margin="0,0,7,7"/>
+                <Button Content="BYP" Command="{Binding Station.AtuBypassCommand}" Margin="0,0,7,7"/>
+                <Button Content="TUNE" Command="{Binding Station.TuneCommand}" Margin="0,0,7,7"/>
+                <Button Content="MOX" Command="{Binding Station.MoxCommand}" Margin="0,0,7,7"/>
+              </WrapPanel>
+              <TextBlock Text="{Binding Station.Status}" TextWrapping="Wrap" Opacity="0.72"/>
+              <TextBlock Text="Touch mode increases every interactive target to roughly 48 logical pixels. Layout breakpoints automatically switch to these tabs on smaller displays." TextWrapping="Wrap" Opacity="0.55"/>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+      </TabControl>
+    </Grid>
+  </Grid>
+</Window>
