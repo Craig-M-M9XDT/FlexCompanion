@@ -23,7 +23,7 @@
   <ItemGroup>
     <AvaloniaResource Include="../Assets/FlexCompanionIcon.png" Link="Assets/FlexCompanionIcon.png" />
     <Content Include="../Assets/FlexCompanionIcon.png" Link="Assets/FlexCompanionIcon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="NOTICE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../NOTICE.md" Link="NOTICE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
