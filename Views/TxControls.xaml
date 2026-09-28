@@ -1,0 +1,74 @@
+<UserControl x:Class="FlexCompanion.Views.TxControls"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:FlexCompanion.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="4,6,4,4">
+            <TextBlock Text="RADIO TRANSMIT" Style="{StaticResource Section}"/>
+            <TextBlock Text="RF power, microphone gain and speech processor are radio-authoritative and follow transmit status from the selected FLEX."
+                       Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,4,0,10"/>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="92"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="64"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="RF POWER" FontWeight="SemiBold" Foreground="{StaticResource TextDimBrush}"
+                           VerticalAlignment="Center"/>
+                <Slider Grid.Column="1" Margin="10,0,10,0" VerticalAlignment="Center"
+                        Minimum="0" Maximum="{Binding TxRfPowerMaximum}" SmallChange="1" LargeChange="10"
+                        TickFrequency="1" IsSnapToTickEnabled="True" IsEnabled="{Binding TxPowerChangesAllowed}"
+                        Value="{Binding TxRfPower, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=80}"/>
+                <TextBlock Grid.Column="2" Text="{Binding TxRfPowerText}" Style="{StaticResource ReadoutSmall}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="92"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="64"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="MIC" FontWeight="SemiBold" Foreground="{StaticResource TextDimBrush}"
+                           VerticalAlignment="Center"/>
+                <Slider Grid.Column="1" Margin="10,0,10,0" VerticalAlignment="Center"
+                        Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
+                        TickFrequency="1" IsSnapToTickEnabled="True"
+                        Value="{Binding TxMicLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=80}"/>
+                <TextBlock Grid.Column="2" Text="{Binding TxMicLevelText}" Style="{StaticResource ReadoutSmall}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="92"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="PROC" FontWeight="SemiBold" Foreground="{StaticResource TextDimBrush}"
+                           VerticalAlignment="Center"/>
+                <ToggleButton Grid.Column="1" Content="PROC" IsChecked="{Binding TxProcEnabled}"
+                              Padding="14,5" Margin="10,0,10,0"
+                              ToolTip="Enable or disable the FLEX speech processor"/>
+                <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:RadioViewModel.ProcModeOptions}"
+                          SelectedItem="{Binding TxProcMode, Mode=TwoWay}"
+                          ToolTip="Speech processor level: Normal, DX or DX+"/>
+            </Grid>
+
+            <TextBlock Text="{Binding TxControlStatus}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+            <Separator Margin="0,0,0,12"/>
+            <TextBlock Text="AETHER TX NOISE REDUCTION" Style="{StaticResource Section}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
+                <ToggleButton Content="RN2" IsChecked="{Binding AetherTxRn2}" Padding="16,5"
+                              ToolTip="Toggle AetherSDR RNNoise on the microphone TX path. This is Aether client-side DSP, not a FLEX radio setting."/>
+                <TextBlock Text="Mic-path RNNoise" Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+            <TextBlock Text="{Binding AetherTxRn2Status}" Style="{StaticResource Hint}" TextWrapping="Wrap"/>
+            <TextBlock Text="Aether TX RN2 is controlled through AetherSDR's local opt-in automation bridge. It applies to voice mic audio; Aether bypasses it for digital/DAX/RADE paths."
+                       Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
