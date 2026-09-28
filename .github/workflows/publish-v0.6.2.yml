@@ -1,0 +1,76 @@
+name: Build and publish v0.6.2
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/publish-v0.6.2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish Windows x64
+        shell: pwsh
+        run: |
+          dotnet restore .\FlexCompanion.csproj
+          dotnet publish .\FlexCompanion.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\windows-x64
+          Compress-Archive -Path .\dist\windows-x64\* -DestinationPath .\dist\FlexCompanion-v0.6.2-windows-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlexCompanion-v0.6.2-windows-x64
+          path: dist/FlexCompanion-v0.6.2-windows-x64.zip
+
+  raspberry-pi:
+    name: Raspberry Pi / Linux ARM64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish Linux ARM64
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dotnet restore ./Pi/FlexCompanion.Pi.csproj
+          dotnet publish ./Pi/FlexCompanion.Pi.csproj -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/pi-arm64
+          tar -C ./dist/pi-arm64 -czf ./dist/FlexCompanion-v0.6.2-pi-arm64.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlexCompanion-v0.6.2-pi-arm64
+          path: dist/FlexCompanion-v0.6.2-pi-arm64.tar.gz
+
+  release:
+    name: GitHub release
+    needs: [windows, raspberry-pi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Publish v0.6.2 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if gh release view v0.6.2 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload v0.6.2 release-assets/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create v0.6.2 release-assets/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Flex Companion v0.6.2" \
+              --notes "Flex Companion v0.6.2. Includes the Windows x64 build and the new Raspberry Pi / Linux ARM64 touchscreen build. The Pi build uses Avalonia/.NET 8 with responsive 800x480+ layouts, touch mode and kiosk support. GPLv3; AetherSDR attribution retained."
+          fi
