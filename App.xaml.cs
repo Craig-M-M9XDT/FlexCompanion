@@ -38,15 +38,21 @@ public partial class App : Application
         };
 
         var splash = new SplashWindow();
-        splash.Show();
+        try
+        {
+            splash.Show();
 
-        // Give the splash enough time to be visible while the main view model starts.
-        await Task.Delay(1200);
+            // Give the splash enough time to be visible while the main view model starts.
+            await Task.Delay(1200);
 
-        var main = new MainWindow();
-        MainWindow = main;
-        main.Show();
-        splash.Close();
+            var main = new MainWindow();
+            MainWindow = main;
+            main.Show();
+        }
+        finally
+        {
+            splash.Close();
+        }
     }
 
     static void OnSliderWheel(object sender, MouseWheelEventArgs e)

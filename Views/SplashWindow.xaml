@@ -18,10 +18,21 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Image Grid.Row="0"
-                   Source="/FlexCompanion;component/Assets/FlexCompanionIcon.png"
-                   Width="164" Height="164" Stretch="Uniform"
-                   HorizontalAlignment="Center"/>
+            <Grid Grid.Row="0" Width="164" Height="164" HorizontalAlignment="Center">
+                <Image x:Name="SplashImage"
+                       Width="164" Height="164" Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       SnapsToDevicePixels="True"/>
+                <Border x:Name="SplashImageFallback"
+                        Visibility="Collapsed"
+                        CornerRadius="28"
+                        BorderBrush="#FF00B4D8" BorderThickness="2"
+                        Background="#FF071421">
+                    <TextBlock Text="FCC" FontSize="46" FontWeight="Bold"
+                               Foreground="#FF00D4FF"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
 
             <TextBlock Grid.Row="1" Text="FLEX CONTROL COMPANION"
                        FontSize="26" FontWeight="Bold" Foreground="White"

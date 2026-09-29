@@ -24,7 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\FlexCompanionIcon.png" />
+    <Resource Include="Assets\FlexCompanionIcon.png">
+      <LogicalName>Assets/FlexCompanionIcon.png</LogicalName>
+    </Resource>
     <Content Include="Assets\FlexCompanionIcon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -35,4 +37,22 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <Target Name="ValidateBrandingAssets" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\Assets\FlexCompanionIcon.png')"
+           Text="The splash image Assets\FlexCompanionIcon.png is missing." />
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\Assets\FlexCompanionIcon.ico')"
+           Text="The application icon Assets\FlexCompanionIcon.ico is missing." />
+    <ItemGroup>
+      <BrandingAsset Include="$(MSBuildProjectDirectory)\Assets\FlexCompanionIcon.png"
+                     ExpectedHash="FCD1D184C72FAAD1CF62F866CF4AE7D581EE2E309EA56EFC13A1D525D2C7ECC4" />
+      <BrandingAsset Include="$(MSBuildProjectDirectory)\Assets\FlexCompanionIcon.ico"
+                     ExpectedHash="AE6D89CF57FF59BFF9AD13535A6BE4CDC95FB59BF22EC9E994FD386ADBF092FA" />
+    </ItemGroup>
+    <GetFileHash Files="@(BrandingAsset)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="ValidatedBrandingAsset" />
+    </GetFileHash>
+    <Error Condition="'%(ValidatedBrandingAsset.FileHash)' != '%(ValidatedBrandingAsset.ExpectedHash)'"
+           Text="Branding asset '%(ValidatedBrandingAsset.Identity)' is damaged or does not match the validated application artwork." />
+  </Target>
 </Project>
