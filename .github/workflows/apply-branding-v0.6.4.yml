@@ -29,13 +29,12 @@ jobs:
           dotnet build .\FlexCompanion.csproj -c Release --no-restore
           dotnet restore .\Pi\FlexCompanion.Pi.csproj
           dotnet build .\Pi\FlexCompanion.Pi.csproj -c Release --no-restore
-      - name: Commit branding update
+      - name: Commit source branding update
         shell: pwsh
         run: |
-          git rm .github/workflows/apply-branding-v0.6.4.yml
           git rm tools/apply_branding_v064.py
           git add -A
           git config user.name "Craig-M-M9XDT"
           git config user.email "craig.magee.1982@gmail.com"
-          git commit -m "Rebrand as Flex Control Companion v0.6.4"
+          git commit -m "Rebrand source as Flex Control Companion v0.6.4"
           git push origin HEAD:branding-v0.6.4
