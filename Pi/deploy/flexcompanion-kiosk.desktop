@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Flex Companion Kiosk
+Name=Flex Control Companion Kiosk
 Exec=/opt/flexcompanion/FlexCompanion --touch --kiosk
 Icon=/opt/flexcompanion/Assets/FlexCompanionIcon.png
 Terminal=false

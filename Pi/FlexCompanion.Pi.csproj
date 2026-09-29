@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FlexCompanion</AssemblyName>
     <RootNamespace>FlexCompanion</RootNamespace>
-    <Version>0.6.3</Version>
-    <Product>Flex Companion</Product>
+    <Version>0.6.4</Version>
+    <Product>Flex Control Companion</Product>
     <Description>Open-source FLEX radio companion controller for Raspberry Pi, Linux and Windows</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>

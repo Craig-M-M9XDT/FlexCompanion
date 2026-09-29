@@ -33,7 +33,7 @@ public partial class App : Application
             var detail = ex.InnerException is null
                 ? ex.Message
                 : $"{ex.Message}\n\nInner exception: {ex.InnerException.Message}";
-            MessageBox.Show($"{detail}\n\nFlex Companion must close.", "Flex Companion", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show($"{detail}\n\nFlex Control Companion must close.", "Flex Control Companion", MessageBoxButton.OK, MessageBoxImage.Warning);
             Shutdown(-1);
         };
 
