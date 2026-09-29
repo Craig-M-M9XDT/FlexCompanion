@@ -1,6 +1,6 @@
-# Flex Companion — Raspberry Pi / touch build
+# Flex Control Companion — Raspberry Pi / touch build
 
-This is the Avalonia UI port of Flex Companion v0.6.2. It keeps the same FLEX TCP/UDP protocol code and radio view-model behaviour as the Windows build, but replaces WPF with Avalonia so the application can run on Raspberry Pi OS 64-bit and other Linux ARM64 systems.
+This is the Avalonia UI port of Flex Control Companion v0.6.4. It keeps the same FLEX TCP/UDP protocol code and radio view-model behaviour as the Windows build, but replaces WPF with Avalonia so the application can run on Raspberry Pi OS 64-bit and other Linux ARM64 systems.
 
 ## Target
 
@@ -105,7 +105,7 @@ sudo ./deploy/install-pi.sh ./publish/pi-arm64 --touch --kiosk --autostart
 
 ## Touch keyboard
 
-Flex Companion uses ordinary Avalonia text boxes, so touch keyboard behaviour is controlled by the Raspberry Pi desktop environment. If your image does not supply an on-screen keyboard, install/enable one such as `squeekboard` or `wvkbd` at OS level.
+Flex Control Companion uses ordinary Avalonia text boxes, so touch keyboard behaviour is controlled by the Raspberry Pi desktop environment. If your image does not supply an on-screen keyboard, install/enable one such as `squeekboard` or `wvkbd` at OS level.
 
 ## Functional scope in this port
 
@@ -128,4 +128,4 @@ The Pi presentation intentionally uses a low-overhead linear meter and trace-onl
 
 ## Licence / provenance
 
-Flex Companion remains GPLv3. AetherSDR-derived/ported portions retain the acknowledgement in the repository root `NOTICE.md`.
+Flex Control Companion remains GPLv3. AetherSDR-derived/ported portions retain the acknowledgement in the repository root `NOTICE.md`.

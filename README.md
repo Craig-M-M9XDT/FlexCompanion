@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="Assets/FlexCompanionIcon.png" alt="Flex Companion app icon" width="180" />
+  <img src="Assets/FlexCompanionIcon.png" alt="Flex Control Companion app icon" width="180" />
 </p>
 
-# Flex Companion
+# Flex Control Companion
 
 Created by **Craig Magee M9XDT**.
 
-Flex Companion is a compact companion for FLEX-6000, FLEX-8000 and Aurora radios. The main Windows build uses WPF, while the `Pi/` project provides a responsive Avalonia/.NET 8 build for Raspberry Pi OS and Linux ARM64. It runs alongside a normal FLEX GUI client, connects through the FLEX network API, and provides DSP controls, metering, spectrum/AGC tools and native station-control functions.
+Flex Control Companion is a compact companion for FLEX-6000, FLEX-8000 and Aurora radios. The main Windows build uses WPF, while the `Pi/` project provides a responsive Avalonia/.NET 8 build for Raspberry Pi OS and Linux ARM64. It runs alongside a normal FLEX GUI client, connects through the FLEX network API, and provides DSP controls, metering, spectrum/AGC tools and native station-control functions.
 
 ## Raspberry Pi / touch build
 
@@ -27,7 +27,7 @@ Meter presentation remains driven by incoming FLEX VITA meter packets. Updates a
 
 ## Spectrum performance / Aether shared-pan mode
 
-Flex Companion now uses an **AUTO spectrum source**. When a locally patched AetherSDR instance is available, Companion reuses the same radio-generated panadapter FFT frames Aether is already receiving. Companion creates **no extra DAX IQ stream and performs no local FFT** in that mode. The compact view re-slices the existing pan frame to the selected slice, following the same basic architecture as Aether's mini-pan.
+Flex Control Companion now uses an **AUTO spectrum source**. When a locally patched AetherSDR instance is available, Companion reuses the same radio-generated panadapter FFT frames Aether is already receiving. Companion creates **no extra DAX IQ stream and performs no local FFT** in that mode. The compact view re-slices the existing pan frame to the selected slice, following the same basic architecture as Aether's mini-pan.
 
 If no Aether bridge frame is available, Companion waits briefly and automatically falls back to its existing DAX-IQ spectrum worker. The fallback remains latest-frame-only and runs FFT work off the UI dispatcher.
 
@@ -114,7 +114,7 @@ See `Pi/README-PI.md` for Linux/Pi publishing, runtime dependencies, `--touch`, 
 
 ## First run
 
-1. Allow Flex Companion through the local firewall on private networks where applicable.
+1. Allow Flex Control Companion through the local firewall on private networks where applicable.
 2. Select a discovered radio and connect it to slot A or B, or enter its IP manually.
 3. Select/follow the desired GUI station and slice in the radio panel.
 4. Open the Station controls for amplifier, DX-cluster, profile, macro and quick-control functions.
@@ -123,11 +123,11 @@ Settings are stored under the platform application-data folder in `FlexCompanion
 
 ## GPL / AetherSDR attribution
 
-Flex Companion is GPLv3 software. It incorporates/ports GPLv3 implementation ideas and code from AetherSDR, including station/peripheral protocol work. See `LICENSE` and `NOTICE.md`.
+Flex Control Companion is GPLv3 software. It incorporates/ports GPLv3 implementation ideas and code from AetherSDR, including station/peripheral protocol work. See `LICENSE` and `NOTICE.md`.
 
 AetherSDR: https://github.com/aethersdr/AetherSDR
 
-FLEX/SmartSDR names are used only to describe interoperability. Flex Companion is not an official FlexRadio product.
+FLEX/SmartSDR names are used only to describe interoperability. Flex Control Companion is not an official FlexRadio product.
 
 ## Build status
 

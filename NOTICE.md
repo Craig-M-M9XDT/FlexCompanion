@@ -1,10 +1,10 @@
-Flex Companion acknowledgement / notice
+Flex Control Companion acknowledgement / notice
 
 Project creator and maintainer: **Craig Magee M9XDT**.
 
-# Flex Companion — GPL and attribution notice
+# Flex Control Companion — GPL and attribution notice
 
-Flex Companion is distributed under the GNU General Public License, version 3.
+Flex Control Companion is distributed under the GNU General Public License, version 3.
 
 This project incorporates and ports GPLv3 implementation ideas and code from
 AetherSDR (https://github.com/aethersdr/AetherSDR), including portions of the
@@ -17,5 +17,5 @@ The FLEX command/protocol interoperability layer is implemented for compatible
 FLEX radios. FlexRadio, SmartSDR and related marks belong to their respective
 owners; this project is not an official FlexRadio product.
 
-Because GPL-covered AetherSDR material is used, redistributions of Flex Companion
+Because GPL-covered AetherSDR material is used, redistributions of Flex Control Companion
 must comply with GPLv3, including corresponding-source obligations.

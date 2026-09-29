@@ -8,9 +8,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FlexCompanion</AssemblyName>
     <RootNamespace>FlexCompanion</RootNamespace>
-    <Version>0.6.3</Version>
+    <Version>0.6.4</Version>
     <ApplicationIcon>Assets\FlexCompanionIcon.ico</ApplicationIcon>
-    <Product>Flex Companion</Product>
+    <Product>Flex Control Companion</Product>
     <Description>Open-source FLEX radio companion controller with native station tools</Description>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>

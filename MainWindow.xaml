@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="clr-namespace:FlexCompanion.Views"
-        Title="Flex Companion" MinWidth="560" MinHeight="520"
+        Title="Flex Control Companion" MinWidth="560" MinHeight="520"
         Icon="Assets/FlexCompanionIcon.png"
         WindowStyle="None" ResizeMode="CanResize" Background="{StaticResource Bg0Brush}"
         Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI" FontSize="12"
@@ -36,7 +36,7 @@
                     <DockPanel LastChildFill="False">
                         <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                             <Ellipse Width="10" Height="10" Fill="{StaticResource AccentBrush}" Margin="0,0,8,0"/>
-                            <TextBlock Text="FLEX COMPANION" FontWeight="Bold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="FLEX CONTROL COMPANION" FontWeight="Bold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -239,7 +239,7 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                         <Image Source="Assets/FlexCompanionIcon.png" Width="36" Height="36" Margin="0,0,10,0"/>
                                         <StackPanel>
-                                            <TextBlock Text="Flex Companion" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Flex Control Companion" FontWeight="SemiBold"/>
                                             <TextBlock Text="Created by Craig Magee M9XDT · GPLv3" Style="{StaticResource Hint}"/>
                                             <TextBlock Text="With AetherSDR acknowledgement" Style="{StaticResource Hint}"/>
                                         </StackPanel>

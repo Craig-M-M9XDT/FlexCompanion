@@ -33,7 +33,7 @@ ARGS=""
 cat >/usr/share/applications/flexcompanion.desktop <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Flex Companion
+Name=Flex Control Companion
 Comment=FLEX radio companion controller
 Exec=$APPDIR/FlexCompanion$ARGS
 Icon=$APPDIR/Assets/FlexCompanionIcon.png
@@ -51,6 +51,6 @@ if [[ $AUTOSTART -eq 1 ]]; then
   fi
 fi
 
-echo "Installed Flex Companion to $APPDIR"
+echo "Installed Flex Control Companion to $APPDIR"
 echo "Desktop entry: /usr/share/applications/flexcompanion.desktop"
 [[ $AUTOSTART -eq 1 ]] && echo "Autostart enabled."
