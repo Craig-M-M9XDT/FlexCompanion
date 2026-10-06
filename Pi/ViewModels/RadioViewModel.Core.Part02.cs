@@ -27,10 +27,9 @@ public sealed partial class RadioViewModel
         set
         {
             if (!Set(ref _lowBandwidthMode, value)) return;
-            // Meter presentation is source-paced by incoming VITA meter packets, so Network
-            // Saver no longer changes its cadence. Only the Companion-owned FFT fallback is
-            // rate-limited; Aether shared-pan frames remain source-paced too.
-            _fftTimer.Interval = value ? TimeSpan.FromMilliseconds(50) : TimeSpan.FromMilliseconds(33);
+            // 800x480 / Pi 3B should run the FFT redraw at a lower cadence; the desktop-rate
+            // refresh is too aggressive for the constrained touch hardware.
+            _fftTimer.Interval = TimeSpan.FromMilliseconds(50);
             OnBandwidthModeChanged();
         }
     }
