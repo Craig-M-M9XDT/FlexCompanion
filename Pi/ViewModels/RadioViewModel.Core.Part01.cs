@@ -10,7 +10,7 @@ public sealed partial class RadioViewModel : ObservableObject
     // Meter packets normally drive presentation directly. This timer is only a slow watchdog
     // for radios/firmware that temporarily stop emitting meter packets.
     readonly DispatcherTimer _meterTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
-    readonly DispatcherTimer _fftTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    readonly DispatcherTimer _fftTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
     readonly DispatcherTimer _meterRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
     readonly DispatcherTimer _reconnectTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     readonly Dictionary<int, MeterDef> _meterDefs = new();
