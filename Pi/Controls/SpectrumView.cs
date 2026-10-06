@@ -121,8 +121,8 @@ public sealed class SpectrumView : Control
             double bottom = (double.IsNaN(_floor) ? -110 : _floor) - 10;
             const double rangeDb = 70;
             int n = s.Length;
-            int pixels = Math.Max(2, (int)Math.Round(w));
-            int stride = Math.Max(1, n / pixels);
+            int pixels = Math.Min(Math.Max(2, (int)Math.Round(w)), 360);
+            int stride = Math.Max(2, n / pixels);
 
             Point? previous = null;
             for (int i = 0; i < n; i += stride)
