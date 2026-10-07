@@ -27,7 +27,7 @@ def connect(sim, dispatcher, **kw):
     s = RadioSession("A", dispatcher, **kw)
     dispatcher.post(lambda: s.connect("127.0.0.1", sim.port, "Sim", SERIAL))
     assert wait_for(lambda: s.connected and s.selected_slice is not None, 6)
-    s.agc.settle_s = 0.03
+    s.agc.settle_s = 0.08          # the app uses 0.28 s; enough margin for a busy CI runner
     return s
 
 

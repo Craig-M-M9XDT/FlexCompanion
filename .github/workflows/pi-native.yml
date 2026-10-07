@@ -41,12 +41,20 @@ jobs:
         run: python -c "from flexcompanion import _core; assert _core.NATIVE, _core.BACKEND_NAME; print(_core.BACKEND_NAME)"
       - name: Tests (C++ core)
         working-directory: /tmp
-        run: pytest -q -p no:cacheprovider "$GITHUB_WORKSPACE/pi-native/tests"
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest -q -p no:cacheprovider -rf --tb=short "$GITHUB_WORKSPACE/pi-native/tests" 2>&1 | tee t.txt \
+            || { grep -E "^(FAILED|E  )|Error" t.txt | tail -n 25 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; exit 1; }
       - name: Tests (numpy fallback)
         working-directory: /tmp
+        shell: bash
         env:
           FLEXCOMPANION_PURE_PYTHON: '1'
-        run: pytest -q -p no:cacheprovider "$GITHUB_WORKSPACE/pi-native/tests"
+        run: |
+          set -o pipefail
+          pytest -q -p no:cacheprovider -rf --tb=short "$GITHUB_WORKSPACE/pi-native/tests" 2>&1 | tee t.txt \
+            || { grep -E "^(FAILED|E  )|Error" t.txt | tail -n 25 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; exit 1; }
 
   installer:
     # Runs the real installer in Raspberry Pi OS's base distributions on an ARM64 runner.

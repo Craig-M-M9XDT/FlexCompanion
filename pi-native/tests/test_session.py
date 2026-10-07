@@ -1,5 +1,6 @@
 """End-to-end: RadioSession against the simulated radio over real TCP/UDP sockets."""
 import math
+import time
 
 from conftest import wait_for
 from flexcompanion.session import RadioSession
@@ -119,7 +120,14 @@ def test_lost_connection_retries(dispatcher):
         s = connected_session(sim, dispatcher)
         sim.stop()
         assert wait_for(lambda: "retrying" in s.status_text, 3)
-        sim2 = SimRadio(port=port).start()
+        sim2 = None
+        for _ in range(60):                     # the port may linger briefly after the old sim closes
+            try:
+                sim2 = SimRadio(port=port).start()
+                break
+            except OSError:
+                time.sleep(0.1)
+        assert sim2 is not None
         assert wait_for(lambda: s.connected, 6)
         s.shutdown()
         sim2.stop()

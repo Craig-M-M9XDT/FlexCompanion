@@ -118,7 +118,7 @@ def test_phase2_cards_drive_features(sim, tmp_path):
         s = w.sessions["A"]
         assert pump(lambda: s.connected and s.selected_slice is not None)
         card = w.panel_a.agc_card
-        s.agc.settle_s = 0.03
+        s.agc.settle_s = 0.08
         assert pump(lambda: card.find.isEnabled())
         card.find.click()
         assert pump(lambda: s.agc.recommended == 60 and card.keep.isEnabled(), 15)
