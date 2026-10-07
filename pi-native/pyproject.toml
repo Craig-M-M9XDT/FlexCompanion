@@ -1,0 +1,30 @@
+[build-system]
+requires = ["scikit-build-core>=0.8", "pybind11>=2.11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "flexcompanion"
+version = "0.7.0"
+description = "Flex Control Companion - native Raspberry Pi / Linux build (Python + Qt with a C++ DSP core)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "See LICENSE in the repository root" }
+authors = [{ name = "Craig Magee M9XDT" }]
+dependencies = ["numpy>=1.21"]
+
+[project.optional-dependencies]
+# PySide6 is optional here so the installer can use the distro's python3-pyside6 package.
+gui = ["PySide6>=6.4"]
+test = ["pytest>=7"]
+
+[project.scripts]
+flexcompanion-native = "flexcompanion.__main__:main"
+flexcompanion-sim = "flexcompanion.sim:main"
+
+[tool.scikit-build]
+wheel.packages = ["flexcompanion"]
+cmake.version = ">=3.18"
+build-dir = "build/{wheel_tag}"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
