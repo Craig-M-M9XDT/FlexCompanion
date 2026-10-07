@@ -15,6 +15,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
+#include <string>
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -258,7 +260,7 @@ public:
             py::gil_scoped_release nogil;
             power_db(*plan, re, im, o);
         }
-        return std::move(out);
+        return out;
     }
 
 private:
@@ -375,6 +377,35 @@ py::array_t<float> resample_linear(py::array_t<float, py::array::c_style | py::a
     return out;
 }
 
+// AetherSDR shared-pan bridge datagram (FCSP v1, little-endian):
+//   "FCSP" | u8 version=1 | u8 flags | u16 serial_len | u32 pan stream id | u16 bin count |
+//   u16 reserved | i64 source timestamp ns | serial (UTF-8) | bin_count x f32 dBm
+// Returns (serial, stream_id, bins float32, source_ns) or None.
+py::object parse_fcsp(const py::buffer& data) {
+    auto [d, len] = buffer_of(data);
+    constexpr int header = 24;
+    if (len < header || std::memcmp(d, "FCSP", 4) != 0 || d[4] != 1) return py::none();
+    auto le16 = [&](int o) { return int(d[o] | (d[o + 1] << 8)); };
+    const int serial_len = le16(6);
+    const uint32_t stream_id = le32(d + 8);
+    const int bins = le16(12);
+    int64_t ns = 0;
+    for (int k = 7; k >= 0; --k) ns = (ns << 8) | d[16 + k];
+    if (serial_len == 0 || bins < 2 || bins > 16384 || stream_id == 0) return py::none();
+    const int payload = header + serial_len;
+    if (payload + bins * 4 > len) return py::none();
+    std::string serial(reinterpret_cast<const char*>(d + header), size_t(serial_len));
+    py::array_t<float> out(bins);
+    float* o = out.mutable_data();
+    for (int k = 0; k < bins; ++k) {
+        uint32_t u = le32(d + payload + k * 4);
+        float f;
+        std::memcpy(&f, &u, sizeof f);
+        o[k] = std::isfinite(f) ? f : -160.0f;
+    }
+    return py::make_tuple(py::str(serial), stream_id, out, ns);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(flexcore, m) {
@@ -387,6 +418,8 @@ PYBIND11_MODULE(flexcore, m) {
     m.def("is_iq_pcc", &is_iq_pcc, py::arg("pcc"));
     m.def("parse_meters", &parse_meters, py::arg("data"), "Meter packet -> [(id, raw int16)].");
     m.def("parse_audio", &parse_audio, py::arg("data"), "Audio packet -> (stream_id, mono float32) or None.");
+    m.def("parse_fcsp", &parse_fcsp, py::arg("data"),
+          "AetherSDR shared-pan datagram -> (serial, stream_id, bins, source_ns) or None.");
     m.def("fft_db", &fft_db, py::arg("i"), py::arg("q"), "Hann-windowed FFT, fftshifted, in dB.");
     m.def("resample_linear", &resample_linear, py::arg("src"), py::arg("count"), py::arg("start"),
           py::arg("end"), py::arg("floor_db") = -160.0f);

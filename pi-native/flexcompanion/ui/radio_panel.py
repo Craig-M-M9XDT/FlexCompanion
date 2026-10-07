@@ -12,6 +12,7 @@ from .. import meters as m
 from ..session import CW_MODES, RadioSession
 from ..settings import SlotPrefs
 from ..spectrum import SPAN_OPTIONS_KHZ
+from .agc_card import AgcCard
 from .widgets import MeterBar, ParamRow, SpectrumView, button, card, label
 
 
@@ -114,6 +115,10 @@ class RadioPanel(QScrollArea):
         sl.addWidget(self.spec, 1)
         self.spec_card = scard
         root.addWidget(scard)
+
+        # ── Best AGC-T ──
+        self.agc_card = AgcCard(session, prefs)
+        root.addWidget(self.agc_card)
 
         # ── DSP ──
         self.rows: List[ParamRow] = []
@@ -276,7 +281,7 @@ class RadioPanel(QScrollArea):
         self._apply_short_screen()
         self.reconnect_btn.setVisible(not connected and bool(s._last[0]) and not s.connecting)
         self.disconnect_btn.setEnabled(connected or s._retrying or s.connecting)
-        for w in [self.station_cb, self.slice_cb, self.follow, self.tx_cb, self.fft_btn, self.span_cb] + self.dsp_cards:
+        for w in [self.station_cb, self.slice_cb, self.follow, self.tx_cb, self.fft_btn, self.span_cb, self.agc_card] + self.dsp_cards:
             w.setEnabled(connected)
         self.message.setText(s.last_message)
         self._refresh_stations()

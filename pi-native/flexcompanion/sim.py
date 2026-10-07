@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import math
 import random
+import re
 import socket
 import struct
 import threading
@@ -58,7 +59,7 @@ class SimRadio:
                          index_letter="A", client_handle=GUI_HANDLE, filter_lo="100", filter_hi="2800",
                          dax="1", nr="0", nr_level="50", nb="0", nb_level="50", anf="0", anf_level="50",
                          nrl="0", lms_nr_level="50", anfl="0", lms_anf_level="50", anft="0",
-                         diversity="0", agc_mode="med", agc_threshold="65"),
+                         diversity="0", agc_mode="med", agc_threshold="65", agc_off_level="40"),
         }
         self.pans: Dict[str, kv.CIDict] = {
             PAN_ID: kv.CIDict(center="14.200000", bandwidth="0.192000", daxiq_channel="0",
@@ -76,6 +77,8 @@ class SimRadio:
         self._threads: List[threading.Thread] = []
         self.iq_streams: Dict[int, dict] = {}
         self._next_stream = 0x20000001
+        self.audio_streams: Dict[int, dict] = {}
+        self._next_audio = 0x04000008
 
     # ───────────────────────── lifecycle ─────────────────────────
 
@@ -87,7 +90,7 @@ class SimRadio:
         s.settimeout(0.5)
         self.port = s.getsockname()[1]
         self._server = s
-        for fn in (self._accept_loop, self._meter_loop, self._iq_loop):
+        for fn in (self._accept_loop, self._meter_loop, self._iq_loop, self._audio_loop):
             t = threading.Thread(target=fn, daemon=True, name=f"sim-{fn.__name__}")
             t.start()
             self._threads.append(t)
@@ -255,7 +258,12 @@ class SimRadio:
                 self._next_stream += 1
                 self.iq_streams[sid] = {"conn": conn, "rate": 48000, "ch": int(d.get("daxiq_channel", "1")), "phase": 0.0}
                 return 0, f"0x{sid:08X}"
-            return 0, "0x04000008"
+            if d.get("type") == "dax_rx":
+                sid = self._next_audio
+                self._next_audio += 1
+                self.audio_streams[sid] = {"conn": conn, "ch": int(d.get("dax_channel", "1"))}
+                return 0, f"0x{sid:08X}"
+            return 0x50000004, ""
         if len(tok) >= 3 and tok[1] == "set":
             sid = kv.parse_hex_id(tok[2])
             d = kv.parse(tok[3:])
@@ -264,6 +272,7 @@ class SimRadio:
             return 0, ""
         if len(tok) >= 3 and tok[1] == "remove":
             self.iq_streams.pop(kv.parse_hex_id(tok[2]), None)
+            self.audio_streams.pop(kv.parse_hex_id(tok[2]), None)
             return 0, ""
         return 0x50000016, ""
 
@@ -308,6 +317,48 @@ class SimRadio:
                     u.sendto(vita_packet(0x8002, 0x00000700, payload), (c.addr, c.udp_port))
                 except OSError:
                     pass
+        u.close()
+
+    def audio_level_db(self) -> float:
+        """Post-AGC noise level of slice 0, modelled so Best AGC-T has a known answer:
+        AGC on -> a clear knee at agc_threshold 60; AGC off -> -60 dBFS + 0.6 dB per step."""
+        s = self.slices[0]
+        if s.get("agc_mode", "med").lower() == "off":
+            return -60.0 + 0.6 * float(s.get("agc_off_level", "40"))
+        t = float(s.get("agc_threshold", "65"))
+        return -20.0 + (t - 60.0) * 0.02 if t >= 60 else -20.0 - (60.0 - t) * 0.5
+
+    def _audio_loop(self) -> None:
+        """DAX RX: 24 kHz float32 stereo, big-endian, 128 frames per packet."""
+        u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        rng = np.random.default_rng(11)
+        frames = 128
+        next_t = time.monotonic()
+        while not self._stop.is_set():
+            streams = list(self.audio_streams.items())
+            if not streams:
+                self._stop.wait(0.05)
+                next_t = time.monotonic()
+                continue
+            rms = 10 ** (self.audio_level_db() / 20.0)
+            for sid, st in streams:
+                c = st["conn"]
+                if not c.udp_port or str(st["ch"]) != self.slices[0].get("dax"):
+                    continue
+                x = (rng.standard_normal(frames) * rms).astype(">f4")
+                lr = np.empty(frames * 2, dtype=">f4")
+                lr[0::2] = x
+                lr[1::2] = x
+                try:
+                    u.sendto(vita_packet(0x03E3, sid, lr.tobytes()), (c.addr, c.udp_port))
+                except OSError:
+                    pass
+            next_t += frames / 24000.0
+            delay = next_t - time.monotonic()
+            if delay > 0:
+                self._stop.wait(delay)
+            elif delay < -0.5:
+                next_t = time.monotonic()
         u.close()
 
     def _iq_loop(self) -> None:
@@ -410,6 +461,140 @@ class _Conn:
         with self.radio._lock:
             if self in self.radio._clients:
                 self.radio._clients.remove(self)
+
+
+class _LineServer:
+    """Tiny threaded TCP server base for the DX cluster / PGXL simulators."""
+
+    def __init__(self, host: str = "127.0.0.1", port: int = 0):
+        self._srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._srv.bind((host, port))
+        self._srv.listen(4)
+        self._srv.settimeout(0.3)
+        self.port = self._srv.getsockname()[1]
+        self.clients: List[socket.socket] = []
+        self.received: List[str] = []
+        self._stop = threading.Event()
+        self._lock = threading.Lock()
+        threading.Thread(target=self._accept, daemon=True).start()
+
+    def _accept(self) -> None:
+        while not self._stop.is_set():
+            try:
+                c, _ = self._srv.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            with self._lock:
+                self.clients.append(c)
+            threading.Thread(target=self._serve, args=(c,), daemon=True).start()
+
+    def _serve(self, c: socket.socket) -> None:
+        self.on_open(c)
+        buf = b""
+        try:
+            while not self._stop.is_set():
+                d = c.recv(4096)
+                if not d:
+                    break
+                buf += d
+                while b"\n" in buf:
+                    raw, buf = buf.split(b"\n", 1)
+                    # a real Telnet server consumes IAC option replies; drop them here too
+                    raw = re.sub(rb"\xff[\xfb-\xfe].", b"", raw)
+                    line = raw.decode("latin-1").strip("\r ")
+                    if line:
+                        self.received.append(line)
+                        self.on_line(c, line)
+        except OSError:
+            pass
+        with self._lock:
+            if c in self.clients:
+                self.clients.remove(c)
+
+    def on_open(self, c: socket.socket) -> None:
+        pass
+
+    def on_line(self, c: socket.socket, line: str) -> None:
+        pass
+
+    def broadcast(self, data: bytes) -> None:
+        with self._lock:
+            clients = list(self.clients)
+        for c in clients:
+            try:
+                c.sendall(data)
+            except OSError:
+                pass
+
+    def drop_clients(self) -> None:
+        with self._lock:
+            clients, self.clients = list(self.clients), []
+        for c in clients:
+            try:
+                c.shutdown(socket.SHUT_RDWR)
+                c.close()
+            except OSError:
+                pass
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._srv.close()
+        self.drop_clients()
+
+
+class SimDxCluster(_LineServer):
+    """DX Spider-like cluster: Telnet option probe, unterminated login prompt, then spots."""
+
+    def on_open(self, c: socket.socket) -> None:
+        c.sendall(bytes([0xFF, 0xFB, 0x01]) + b"Welcome to SIM-DXC\r\n\r\nlogin: ")
+
+    def on_line(self, c: socket.socket, line: str) -> None:
+        if len(self.received) == 1:
+            c.sendall(f"Hello {line}, this is SIM-DXC\r\n{line} de SIM-DXC >\r\n".encode())
+
+    def spot(self, spotter: str, khz: float, call: str, comment: str = "CQ", utc: str = "1712") -> None:
+        line = f"DX de {spotter}:{khz:>11.1f}  {call:<13}{comment:<30} {utc}Z\r\n"
+        self.broadcast(line.encode())
+
+
+class SimPgxl(_LineServer):
+    """4O3A Power Genius XL telemetry: version banner, info / status replies, alerts."""
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.state = "OPERATE"
+        self.fwd_dbm = 60.0             # 1000 W
+        self.return_loss = -20.0       # SWR ~1.22
+
+    def on_open(self, c: socket.socket) -> None:
+        c.sendall(b"V3.8.11\n")
+
+    def on_line(self, c: socket.socket, line: str) -> None:
+        if not line.startswith("C") or "|" not in line:
+            return
+        seq, cmd = line[1:].split("|", 1)
+        if cmd == "info":
+            body = "model=PGXL serial=SIM-PGXL"
+        elif cmd == "status":
+            body = (f"state={self.state} fwd={self.fwd_dbm:.1f} swr={self.return_loss:.1f} "
+                    f"id=21.5 temp=41.0 vdd=50.2 vac=231")
+        else:
+            body = ""
+        c.sendall(f"R{seq}|0|{body}\n".encode())
+
+    def alert(self, text: str) -> None:
+        self.broadcast(f"M|{text}\n".encode())
+
+
+def send_aether_frame(serial: str, stream_id: int, bins, port: int = 7331) -> None:
+    """Send one FCSP v1 frame as a patched AetherSDR would."""
+    from .aether import fcsp_packet
+    u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    u.sendto(fcsp_packet(serial, stream_id, bins), ("127.0.0.1", port))
+    u.close()
 
 
 def _local_ip() -> str:

@@ -78,6 +78,25 @@ def parse_audio(data):
     return sid, (np.frombuffer(d, dtype=">i2", count=n, offset=_HEADER).astype(np.float32) / 32768.0)
 
 
+def parse_fcsp(data):
+    """AetherSDR shared-pan datagram -> (serial, stream_id, bins, source_ns) or None."""
+    d = bytes(data)
+    if len(d) < 24 or d[:4] != b"FCSP" or d[4] != 1:
+        return None
+    serial_len, stream_id, bins = struct.unpack_from("<HIH", d, 6)
+    ns = struct.unpack_from("<q", d, 16)[0]
+    if serial_len == 0 or bins < 2 or bins > 16384 or stream_id == 0:
+        return None
+    payload = 24 + serial_len
+    if payload + bins * 4 > len(d):
+        return None
+    serial = d[24:payload].decode("utf-8", "replace")
+    with np.errstate(invalid="ignore"):
+        arr = np.frombuffer(d, dtype="<f4", count=bins, offset=payload).astype(np.float32)
+    arr[~np.isfinite(arr)] = -160.0
+    return serial, stream_id, arr, ns
+
+
 def _valid_size(n: int) -> bool:
     return 64 <= n <= 65536 and (n & (n - 1)) == 0
 

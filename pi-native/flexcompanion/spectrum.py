@@ -141,3 +141,32 @@ def filter_fractions(frame: SpectrumFrame, filter_lo: Optional[str], filter_hi: 
     frame.filter_lo_frac = frame.slice_fraction + lo / span
     frame.filter_hi_frac = frame.slice_fraction + hi / span
     return frame
+
+
+RESLICE_BINS = 320
+
+
+def reslice_pan(bins: np.ndarray, pan_center_mhz: Optional[float], pan_bandwidth_mhz: Optional[float],
+                slice_mhz: Optional[float], window: SpectrumWindow) -> SpectrumFrame:
+    """Re-slice a full panadapter FFT (from AetherSDR) to the passband-centred view.
+
+    Port of ``ResliceAetherPan``: the radio's own pan bins are linearly resampled to the
+    same window the DAX-IQ path would show, so the view looks identical either way.
+    """
+    from . import _core
+    n = len(bins)
+    if (pan_center_mhz is None or pan_bandwidth_mhz is None or pan_bandwidth_mhz <= 0
+            or slice_mhz is None or n < 2):
+        out = _core.resample_linear(np.asarray(bins, dtype=np.float32), RESLICE_BINS, 0, max(1, n - 1), -160.0)
+        return SpectrumFrame(out, window.span_hz * 0.5, 0.0, math.nan)
+    finite = bins[np.isfinite(bins)]
+    floor = max(-180.0, float(finite.min())) if len(finite) else -160.0
+    want_bw = window.span_hz / 1e6
+    pan_low = pan_center_mhz - pan_bandwidth_mhz * 0.5
+    want_low = slice_mhz + window.centre_offset_hz / 1e6 - want_bw * 0.5
+    start = (want_low - pan_low) / pan_bandwidth_mhz * (n - 1)
+    end = (want_low + want_bw - pan_low) / pan_bandwidth_mhz * (n - 1)
+    out = _core.resample_linear(np.asarray(bins, dtype=np.float32), RESLICE_BINS, start, end, floor)
+    marker = 0.5 - window.centre_offset_hz / window.span_hz
+    return SpectrumFrame(out, window.span_hz * 0.5, window.centre_offset_hz,
+                         marker if 0 <= marker <= 1 else math.nan)

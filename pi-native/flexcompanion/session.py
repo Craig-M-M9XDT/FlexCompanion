@@ -22,6 +22,8 @@ from . import _core, kv, meters, spectrum
 from .client import NO_REPLY, FlexClient, error_text
 from .dispatch import Dispatcher, TimerHandle
 from .params import ParamControl, build_controls
+from .session_aether import AETHER_STATUS, AetherMixin
+from .session_agc import AUDIO_PCCS, AgcMixin
 
 UNKNOWN_PARAMETER = 0x5000002D
 COMMAND_REFUSED = 0x50004001
@@ -94,9 +96,10 @@ class StationItem:
 ALL_STATIONS = StationItem()
 
 
-class RadioSession:
+class RadioSession(AgcMixin, AetherMixin):
     def __init__(self, slot: str, dispatcher: Dispatcher, saver: bool = False,
-                 tx_meter: str = "Power", show_fft: bool = False, fft_span_khz: float = 48.0):
+                 tx_meter: str = "Power", show_fft: bool = False, fft_span_khz: float = 48.0,
+                 agc_target_db: float = -28.0, aether: bool = True):
         self.slot = slot
         self.d = dispatcher
         self._listeners: List[Callable[[str], None]] = []
@@ -172,6 +175,8 @@ class RadioSession:
         self._fft_pending = False
         self._fft_stop = threading.Event()
         self._fft_thread: Optional[threading.Thread] = None
+        self._init_agc(agc_target_db)
+        self._init_aether(aether)
 
     # ───────────────────────── plumbing ─────────────────────────
 
@@ -238,6 +243,7 @@ class RadioSession:
         self._cleanup()
         self._want_connected = True
         self._last = (host, port, title, serial or "")
+        self.radio_serial = (serial or "").strip().strip('"')
         self.connecting = True
         self.status_text = f"Connecting to {host}:{port}"
         self.radio_title = title.strip() or host
@@ -287,6 +293,7 @@ class RadioSession:
         self.status_text = f"Connected to {c.host}   handle {c.handle}"
         self._start_watchdog()
         self._start_fft_worker()
+        self._start_aether()
         self._notify("connection")
 
     def _after_subscriptions(self) -> None:
@@ -344,6 +351,8 @@ class RadioSession:
         self._notify("connection")
 
     def _cleanup(self) -> None:
+        self._cleanup_agc()
+        self._stop_aether()
         self._epoch += 1
         self._stop_watchdog()
         self._stop_fft_worker()
@@ -405,6 +414,9 @@ class RadioSession:
         model = d.get("model", "")
         name = d.get("nickname") or d.get("name") or ""
         self.model = model
+        chassis = (d.get("chassis_serial") or d.get("serial") or "").strip().strip('"')
+        if chassis:
+            self.radio_serial = chassis
         if model:
             self.radio_title = f"{name}  ({model})" if name and name != model else model
         self.power_max = 600.0 if model.upper().startswith("AU") else 120.0
@@ -426,7 +438,9 @@ class RadioSession:
         self.schedule_meter_refresh()
         self._spec_avg = None
         self.engine.configure(self._fft_size() if self.show_fft else 0)
+        self._mark_fft_wanted()
         self._notify("selection")
+        self._agc_on_slice_changed()
         self.ensure_iq_stream()
 
     def set_follow_active(self, on: bool) -> None:
@@ -541,6 +555,10 @@ class RadioSession:
                 self._apply_iq_rate()
             if "pan" in d:
                 self.ensure_iq_stream()
+            if "dax" in d:
+                self.ensure_audio_stream()
+            if any(k.startswith("agc") or k in ("nr", "nrl", "nrs", "rnn", "nrf", "nb", "anf", "anfl", "anft") for k in d):
+                self._notify("agc")
             self._notify("selection")
 
     def _handle_pan(self, tok: List[str]) -> None:
@@ -930,6 +948,7 @@ class RadioSession:
         defs = self.meter_defs
         self.readings.update(lambda mid: meters.read_meter(snapshot, defs, mid), self.meter_ids, self._interlock_tx)
         self._notify("meters")
+        self._audio_tick()
 
     def _start_watchdog(self) -> None:
         self._stop_watchdog()
@@ -959,6 +978,8 @@ class RadioSession:
             return
         self.show_fft = on
         self._iq_lost = False
+        if on:
+            self._mark_fft_wanted()
         if not on:
             self.spectrum_frame = None
             self._spec_avg = None
@@ -1038,6 +1059,7 @@ class RadioSession:
             "assigned": self._iq_pan_assigned, "lost": self._iq_lost,
             "rate": spectrum.rate_for_span(self._window().span_hz, self.saver),
             "station": self.station_for_commands(), "bound": self._bound_client_id,
+            "aether": self.aether_active, "probe": self._aether_probing,
         }
         c = self.client
         if c is None:
@@ -1094,6 +1116,14 @@ class RadioSession:
             remove_current()
             r["status"] = "Waiting for the selected slice's panadapter…"
             r["clear"] = True
+            return
+        if p.get("aether"):
+            if p["cur_id"]:
+                remove_current()                 # Aether is serving this pan: no DAX IQ needed
+            r["status"] = AETHER_STATUS
+            return
+        if p.get("probe") and not p["cur_id"]:
+            r["status"] = "Looking for Aether shared pan…"
             return
 
         def chan(v) -> int:
@@ -1164,6 +1194,8 @@ class RadioSession:
         """UDP thread: IQ for our stream goes straight into the native ring buffer."""
         if sid and sid == self._iq_stream_id and _core.is_iq_pcc(pcc):
             self.engine.push_packet(data, sid)
+        elif pcc in AUDIO_PCCS:
+            self._on_audio_packet(sid, data)
 
     def _start_fft_worker(self) -> None:
         self._stop_fft_worker()
@@ -1195,7 +1227,7 @@ class RadioSession:
 
     def _on_fft(self, full: np.ndarray) -> None:
         self._fft_pending = False
-        if not self.show_fft:
+        if not self.show_fft or self.aether_active:
             return
         s = self.selected_slice
         offset = None

@@ -73,6 +73,10 @@ class FlexClient:
     def connect(self, host: str, port: int = 4992, timeout: float = 5.0) -> None:
         self.host = host
         tcp = socket.create_connection((host, port), timeout=timeout)
+        if tcp.getsockname() == tcp.getpeername():
+            # Linux "TCP self-connect": dialling a closed local port can connect a socket to itself.
+            tcp.close()
+            raise ConnectionRefusedError(f"nothing listening on {host}:{port}")
         tcp.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         tcp.settimeout(None)
         self._tcp = tcp

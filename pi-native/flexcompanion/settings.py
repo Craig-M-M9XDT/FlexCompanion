@@ -68,6 +68,17 @@ class SlotPrefs:
     def fft_span_khz(self, v: float) -> None:
         self._d["FftSpanKhz"] = float(v)
 
+    @property
+    def agc_target_db(self) -> float:
+        try:
+            return min(-6.0, max(-60.0, float(self._get("AgcTargetDb"))))
+        except (TypeError, ValueError):
+            return -28.0
+
+    @agc_target_db.setter
+    def agc_target_db(self, v: float) -> None:
+        self._d["AgcTargetDb"] = float(v)
+
 
 class Settings:
     def __init__(self, path: Path | None = None):
@@ -165,6 +176,77 @@ class Settings:
         if not isinstance(s, dict):
             s = slots[slot] = {}
         return SlotPrefs(s)
+
+    # ── station tools (same keys as the .NET build) ──
+    def _str(self, key: str, default: str = "") -> str:
+        v = self._get(key, default)
+        return default if v is None else str(v)
+
+    def _int(self, key: str, default: int, lo: int, hi: int) -> int:
+        try:
+            return min(hi, max(lo, int(self._get(key, default))))
+        except (TypeError, ValueError):
+            return default
+
+    @property
+    def dx_host(self) -> str:
+        return self._str("DxClusterHost")
+
+    @dx_host.setter
+    def dx_host(self, v: str) -> None:
+        self._set("DxClusterHost", v.strip())
+
+    @property
+    def dx_port(self) -> int:
+        return self._int("DxClusterPort", 7300, 1, 65535)
+
+    @dx_port.setter
+    def dx_port(self, v: int) -> None:
+        self._set("DxClusterPort", int(v))
+
+    @property
+    def dx_callsign(self) -> str:
+        return self._str("DxClusterCallsign").upper()
+
+    @dx_callsign.setter
+    def dx_callsign(self, v: str) -> None:
+        self._set("DxClusterCallsign", v.strip().upper())
+
+    @property
+    def dx_auto_reconnect(self) -> bool:
+        return bool(self._get("DxClusterAutoReconnect", True))
+
+    @property
+    def spot_max_age_minutes(self) -> int:
+        return self._int("SpotMaxAgeMinutes", 30, 1, 24 * 60)
+
+    @property
+    def publish_spots_to_radio(self) -> bool:
+        return bool(self._get("PublishSpotsToRadio", True))
+
+    @publish_spots_to_radio.setter
+    def publish_spots_to_radio(self, v: bool) -> None:
+        self._set("PublishSpotsToRadio", bool(v))
+
+    @property
+    def pgxl_host(self) -> str:
+        return self._str("PgxlHost")
+
+    @pgxl_host.setter
+    def pgxl_host(self, v: str) -> None:
+        self._set("PgxlHost", v.strip())
+
+    @property
+    def pgxl_port(self) -> int:
+        return self._int("PgxlPort", 9008, 1, 65535)
+
+    @pgxl_port.setter
+    def pgxl_port(self, v: int) -> None:
+        self._set("PgxlPort", int(v))
+
+    @property
+    def pgxl_auto_reconnect(self) -> bool:
+        return bool(self._get("PgxlAutoReconnect", True))
 
     @property
     def macros(self) -> List[Dict[str, str]]:
