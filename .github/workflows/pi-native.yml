@@ -62,13 +62,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install
-        run: bash pi-native/deploy/install.sh --from "$GITHUB_WORKSPACE/pi-native"
+        shell: bash
+        run: |
+          set -o pipefail
+          bash pi-native/deploy/install.sh --from "$GITHUB_WORKSPACE/pi-native" 2>&1 | tee install.txt
+          if grep -q "C++ core didn't build" install.txt; then
+            tail -n 40 install.txt | while IFS= read -r l; do echo "::warning::${l//%/%25}"; done
+          fi
       - name: Smoke test the installed app
         working-directory: /tmp
+        shell: bash
         run: |
-          /opt/flexcompanion-native/venv/bin/python -m flexcompanion --version
-          /opt/flexcompanion-native/venv/bin/python -c "from flexcompanion import _core; assert _core.NATIVE; import PySide6; print('PySide6', PySide6.__version__)"
-          /opt/flexcompanion-native/venv/bin/pip install -q pytest
-          /opt/flexcompanion-native/venv/bin/python -m pytest -q -p no:cacheprovider "$GITHUB_WORKSPACE/pi-native/tests"
+          set -o pipefail
+          report() { tail -n 40 "$1" | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; }
+          V=/opt/flexcompanion-native/venv/bin
+          $V/python -m flexcompanion --version 2>&1 | tee out1.txt || { report out1.txt; exit 1; }
+          $V/python -c "from flexcompanion import _core; import PySide6; print(_core.BACKEND_NAME, 'PySide6', PySide6.__version__); assert _core.NATIVE" 2>&1 | tee out2.txt || { report out2.txt; exit 1; }
+          $V/pip install -q pytest
+          $V/python -m pytest -q -p no:cacheprovider -rf --tb=short "$GITHUB_WORKSPACE/pi-native/tests" 2>&1 | tee out3.txt || { report out3.txt; exit 1; }
       - name: Uninstall
         run: bash pi-native/deploy/install.sh --uninstall && test ! -e /opt/flexcompanion-native
