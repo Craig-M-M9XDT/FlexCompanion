@@ -118,8 +118,9 @@ class SimRadio:
         if self._server:
             self._server.close()
         with self._lock:
-            for c in list(self._clients):
-                c.close()
+            clients = list(self._clients)
+        for c in clients:          # close outside the lock: _Conn.close() takes it too
+            c.close()
 
     # ───────────────────────── TCP ─────────────────────────
 

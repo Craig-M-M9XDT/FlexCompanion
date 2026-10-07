@@ -14,6 +14,14 @@ A responsive **Avalonia/.NET 8 ARM64** build is available under `Pi/`. It is des
 
 On compact displays the UI switches to large `RADIO A`, `RADIO B` and `STATION` tabs while both radio sessions can remain connected. The Pi build keeps the v0.6.2 receive-passband-centred spectrum behaviour, source-paced metering, Aether shared-pan preference with DAX-IQ fallback, Network Saver and Best AGC-T. See [`Pi/README-PI.md`](Pi/README-PI.md) for ARM64 publish, install and autostart instructions.
 
+## Native Raspberry Pi / Linux build (Python + C++)
+
+[`pi-native/`](pi-native/README.md) is a from-scratch rebuild of the Pi app in **Python + Qt (PySide6)** with a **C++ DSP core**. It needs no .NET runtime, builds on the Pi itself, runs on 64- and 32-bit Raspberry Pi OS, and shares this build's settings file. It also includes a simulated radio (`--demo`) for trying it without hardware.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Craig-M-M9XDT/FlexCompanion/main/pi-native/deploy/install.sh | sudo bash -s -- --touch
+```
+
 ## Meter layouts
 
 Each radio slot has four persistent meter layouts:
