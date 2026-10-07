@@ -191,8 +191,14 @@ class RadioPanel(QScrollArea):
             for c, st in enumerate((0, 1, 0, 0, 0)):
                 g.setColumnStretch(c, st)
 
+    def _apply_short_screen(self) -> None:
+        # On 480-pixel-high screens the radio name already says we're connected; save the line.
+        short = self.viewport().height() < 520
+        self.status.setVisible(not (short and self.s.connected))
+
     def resizeEvent(self, ev) -> None:
         super().resizeEvent(ev)
+        self._apply_short_screen()
         w = self.viewport().width()
         self._layout_dsp(3 if w >= 1250 else 2 if w >= 640 else 1)
         self._layout_pick(w >= 900)
@@ -267,6 +273,7 @@ class RadioPanel(QScrollArea):
             self.title.setText(f"Slot {s.slot} is free")
         self.status.setText(s.status_text if (connected or s.connecting or s.status_text != "Not connected")
                             else f'Pick a radio and press "Connect {s.slot}", or type its IP.')
+        self._apply_short_screen()
         self.reconnect_btn.setVisible(not connected and bool(s._last[0]) and not s.connecting)
         self.disconnect_btn.setEnabled(connected or s._retrying or s.connecting)
         for w in [self.station_cb, self.slice_cb, self.follow, self.tx_cb, self.fft_btn, self.span_cb] + self.dsp_cards:

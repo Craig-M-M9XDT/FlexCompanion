@@ -64,8 +64,10 @@ so you can try the whole UI, including meters, the spectrum and the DSP buttons.
 - Network saver (caps DAX IQ at 24 kHz for Wi-Fi / VPN / two radios)
 - Station tab: bands, modes, ATU / BYP / TUNE / MOX, amplifier OPERATE / STANDBY, profile load,
   macros (`@mode`, `@band`) and a raw FLEX command box
-- responsive layout from 800×480 upwards: below 1000 px wide, the radio list moves into a
-  RADIOS tab
+- fits every official Raspberry Pi touchscreen in touch mode, windowed or `--kiosk` full-screen:
+  the 7" Touch Display (800×480), and Touch Display 2 (720×1280 portrait, its default, or
+  1280×720 when rotated). Below 1000 px wide, the radio list moves into a RADIOS tab; the
+  sidebar scrolls; the window never opens bigger than the screen
 
 Next phases, already present in the .NET code: Best AGC-T calibration, the DX cluster with
 click-to-tune spots, Power Genius XL telemetry, and the Aether shared-pan bridge.
@@ -83,7 +85,7 @@ pi-native/
     params.py meters.py spectrum.py station.py settings.py
     sim.py                   simulated FLEX radio (tests and --demo)
     ui/                      PySide6 window, radio and station panels, meter/spectrum widgets
-  tests/                     39 tests: core parity, protocol logic, end-to-end vs the simulator, UI
+  tests/                     40 tests: core parity, protocol logic, end-to-end vs the simulator, UI
   deploy/install.sh
 ```
 

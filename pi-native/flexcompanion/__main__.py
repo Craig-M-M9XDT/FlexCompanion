@@ -51,13 +51,9 @@ def main(argv=None) -> int:
         settings.remember_radio("A", "127.0.0.1", sim.port, "SimRadio (demo)", "")
 
     win = MainWindow(settings, touch=args.touch, kiosk=args.kiosk)
-    screen = app.primaryScreen()
-    if screen is not None:
-        avail = screen.availableGeometry()
-        if avail.width() < win.width() or avail.height() < win.height():
-            win.resize(min(win.width(), avail.width()), min(win.height(), avail.height()))
     if not args.kiosk:
         win.show()
+        win.fit_to_screen()
     rc = app.exec()
     if sim is not None:
         settings.forget_radio("A")

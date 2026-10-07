@@ -9,9 +9,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
-from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import (QApplication, QCheckBox, QSizePolicy, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
+from PySide6.QtWidgets import (QApplication, QCheckBox, QScrollArea, QSizePolicy, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
                                QMainWindow, QTabWidget, QVBoxLayout, QWidget)
 
 from .. import __version__, _core
@@ -149,7 +149,8 @@ class MainWindow(QMainWindow):
             head.addWidget(pic)
         tbox = QVBoxLayout()
         tbox.setSpacing(0)
-        tbox.addWidget(label("FLEX CONTROL COMPANION", "title"))
+        self.title_lbl = label("FLEX CONTROL COMPANION", "title")
+        tbox.addWidget(self.title_lbl)
         self.subtitle = label(f"Native Pi / Linux build · v{__version__} · {_core.BACKEND_NAME}", "dim")
         tbox.addWidget(self.subtitle)
         head.addLayout(tbox)
@@ -169,13 +170,19 @@ class MainWindow(QMainWindow):
         self.kiosk_box.toggled.connect(self._kiosk)
         for b in (self.dual_box, self.saver_box, self.touch_box, self.kiosk_box):
             head.addWidget(b)
+        head.setSpacing(10)
         root.addLayout(head)
 
         # ── body: sidebar + tabs ──
         body = QHBoxLayout()
         body.setSpacing(8)
-        self.sidebar, sl = card()
-        self.sidebar.setFixedWidth(330)
+        # The sidebar scrolls, so it never forces the window taller than a 480/720-pixel screen.
+        side_card, sl = card()
+        self.sidebar = QScrollArea()
+        self.sidebar.setWidget(side_card)
+        self.sidebar.setWidgetResizable(True)
+        self.sidebar.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.sidebar.setFixedWidth(352)
         self.radios_panels: List[RadiosPanel] = []
         side_radios = RadiosPanel(self)
         self.radios_panels.append(side_radios)
@@ -216,13 +223,14 @@ class MainWindow(QMainWindow):
 
     # ───────────────────────── layout ─────────────────────────
 
-    def _rebuild_tabs(self) -> None:
-        compact = self.width() < COMPACT_BELOW
+    def _rebuild_tabs(self, force_compact: bool = False) -> None:
+        compact = force_compact or self.width() < COMPACT_BELOW
         current = self.tabs.currentWidget()
         self._compact = compact
         self.sidebar.setVisible(not compact)
         self.subtitle.setVisible(not compact)
         self.disc_text.setVisible(not compact)
+        self.title_lbl.setText("FLEX COMPANION" if compact else "FLEX CONTROL COMPANION")
         self.tabs.clear()
         if compact:
             self.tabs.addTab(self.radios_tab, "RADIOS")
@@ -233,6 +241,21 @@ class MainWindow(QMainWindow):
         i = self.tabs.indexOf(current) if current is not None else -1
         self.tabs.setCurrentIndex(i if i >= 0 else (1 if compact else 0))
         self._tab_titles()
+        QTimer.singleShot(0, self.fit_to_screen)
+
+    def fit_to_screen(self) -> None:
+        """Never be bigger than the screen (e.g. a 800x480 or 720x1280 Pi touch display)."""
+        if self.isFullScreen():
+            return
+        scr = self.screen()
+        if scr is None:
+            return
+        avail = scr.availableGeometry()
+        w, h = min(self.width(), avail.width()), min(self.height(), avail.height())
+        if w < COMPACT_BELOW and not self._compact:
+            self._rebuild_tabs(force_compact=True)    # drop the sidebar first, or its minimum width wins
+        if (w, h) != (self.width(), self.height()):
+            self.resize(w, h)
 
     def _tab_titles(self) -> None:
         for slot, panel in (("A", self.panel_a), ("B", self.panel_b)):
@@ -260,6 +283,7 @@ class MainWindow(QMainWindow):
 
     def _touch(self, on: bool) -> None:
         theme.apply(QApplication.instance(), TOUCH_SCALE if on else 1.0)
+        QTimer.singleShot(0, self.fit_to_screen)
 
     def _kiosk(self, on: bool) -> None:
         if on:

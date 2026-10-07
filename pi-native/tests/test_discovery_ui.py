@@ -57,3 +57,36 @@ def test_main_window_smoke(sim, tmp_path):
         w.close()
         QCoreApplication.processEvents()
     assert "NativeLastRadio" in (tmp_path / "settings.json").read_text()
+
+
+PI_SCREENS = {"Touch Display (7in) 800x480": (800, 480),
+              "Touch Display 2 landscape 1280x720": (1280, 720),
+              "Touch Display 2 portrait 720x1280": (720, 1280)}
+
+
+def test_fits_official_pi_touchscreens(tmp_path):
+    """In touch mode the window must be able to shrink to every official Pi touchscreen."""
+    pytest.importorskip("PySide6")
+    from PySide6.QtCore import QCoreApplication
+    from PySide6.QtWidgets import QApplication
+    from flexcompanion.settings import Settings
+    from flexcompanion.ui import theme
+    from flexcompanion.ui.main_window import MainWindow
+
+    app = QApplication.instance() or QApplication([])
+    theme.apply(app)
+    w = MainWindow(Settings(tmp_path / "settings.json"), touch=True)
+    w.show()
+    try:
+        for name, (sw, sh) in PI_SCREENS.items():
+            w.resize(sw, min(sh, 800))
+            for _ in range(5):
+                QCoreApplication.processEvents()
+            m = w.minimumSizeHint()
+            assert m.width() <= sw and m.height() <= sh, f"{name}: needs at least {m.width()}x{m.height()}"
+            assert w._compact == (sw < 1000), name
+            body = w.panel_a.widget()
+            assert body.minimumSizeHint().width() <= w.panel_a.viewport().width(), f"{name}: radio page clipped"
+    finally:
+        w.close()
+        QCoreApplication.processEvents()
