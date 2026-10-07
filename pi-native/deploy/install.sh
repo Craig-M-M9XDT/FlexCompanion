@@ -102,6 +102,8 @@ if [[ $DEPS -eq 1 ]] && command -v apt-get >/dev/null; then
   apt-get update -qq || warn "apt-get update failed; using cached package lists"
   pkgs=(python3 python3-venv python3-dev python3-pip python3-numpy build-essential cmake
         ca-certificates curl fonts-dejavu-core
+        libglib2.0-0 libglib2.0-0t64 libfreetype6 libx11-6 libx11-xcb1 libxcb1 libxext6 libxrender1
+        libxi6 libsm6 libice6
         libgl1 libegl1 libfontconfig1 libdbus-1-3 libxkbcommon0 libxkbcommon-x11-0
         libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0
         libxcb-shape0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
@@ -157,6 +159,12 @@ else
   cp -r "$SRC/flexcompanion" "$site/"
 fi
 "$VPY" -m flexcompanion --version || die "Installed, but the app does not start; see the messages above."
+if ! "$VPY" -c "import PySide6.QtWidgets" 2>"$WORK/qt.log"; then
+  cat "$WORK/qt.log" >&2
+  qtdir="$("$VPY" -c 'import PySide6, os; print(os.path.dirname(PySide6.__file__))' 2>/dev/null || true)"
+  missing="$(find "$qtdir" -name 'libQt6*.so*' -exec ldd {} + 2>/dev/null | awk '/not found/{print $1}' | sort -u | tr '\n' ' ')"
+  die "Qt can't load${missing:+ — missing system libraries: $missing}. Install them with apt and re-run."
+fi
 chmod -R a+rX "$PREFIX"
 
 # ---------------------------------------------------------------- launcher
