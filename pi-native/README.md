@@ -59,33 +59,50 @@ so you can try the whole UI, including meters, the spectrum and the DSP buttons.
   DIGx / RTTY / FDV / CW modes and restored afterwards
 - source-paced RX S-meter / TX meter, subscribed only to the meters on screen (Power, SWR, Proc,
   Mic, Vdd, Current, Temp), with peak hold
-- compact spectrum from a Companion-owned DAX IQ stream, centred on the receive passband
-  (3–192 kHz), with filter shading, carrier marker and **tap-to-tune**
+- compact spectrum centred on the receive passband (3–192 kHz), with filter shading, carrier
+  marker and **tap-to-tune**. It prefers the **AetherSDR shared pan**: when a patched AetherSDR
+  (`AetherBridgePatch/`) runs on the same machine, Companion re-slices the FFT frames Aether
+  already receives and opens no DAX IQ stream of its own. If no frames arrive within 1.2 s, or
+  they stop, it switches to its own DAX IQ stream automatically
+- **Best AGC-T** for the selected slice. It sweeps AGC-T 100 → 0 on the slice's DAX RX audio and
+  picks the knee where noise just starts to drop; with AGC off, it picks the gain that puts the
+  noise at your target level. NR / NB / notch filters are switched off for the scan and restored
+  afterwards, and you can Keep the result or Restore the original. The audio stream only exists
+  during a scan; an ASSIGN DAX button appears if the slice has no DAX channel
 - Network saver (caps DAX IQ at 24 kHz for Wi-Fi / VPN / two radios)
 - Station tab: bands, modes, ATU / BYP / TUNE / MOX, amplifier OPERATE / STANDBY, profile load,
   macros (`@mode`, `@band`) and a raw FLEX command box
+- **DX cluster** (DX Spider / AR-Cluster / CC Cluster over Telnet): logs in with your callsign,
+  shows a live spot list (tap a spot to tune), forwards spots to the radio with `spot add` so
+  SmartSDR / Aether show them too, expires old spots, and reconnects with back-off
+- **Power Genius XL** telemetry over TCP 9008: power, SWR, current, PA temperature, Vdd, mains
+  and amplifier alerts, polled 4× a second, reconnecting automatically. If the radio reports the
+  amplifier, its IP is used when you leave the box blank
 - fits every official Raspberry Pi touchscreen in touch mode, windowed or `--kiosk` full-screen:
   the 7" Touch Display (800×480), and Touch Display 2 (720×1280 portrait, its default, or
   1280×720 when rotated). Below 1000 px wide, the radio list moves into a RADIOS tab; the
   sidebar scrolls; the window never opens bigger than the screen
 
-Next phases, already present in the .NET code: Best AGC-T calibration, the DX cluster with
-click-to-tune spots, Power Genius XL telemetry, and the Aether shared-pan bridge.
+The native build now covers everything the .NET Pi build does.
 
 ## Layout
 
 ```
 pi-native/
-  src/core/flexcore.cpp      C++ (pybind11): VITA-49 decode, IQ ring buffer + FFT, resampling
+  src/core/flexcore.cpp      C++ (pybind11): VITA-49 decode, IQ ring buffer + FFT, resampling,
+                             AetherSDR FCSP frames
   flexcompanion/
     _core.py / _fallback.py  loads the C++ core, or the identical numpy implementation
     client.py                TCP 4992 command/status + UDP VITA receiver
     discovery.py             UDP 4992 radio discovery
     session.py               one radio slot (port of RadioViewModel)
+    session_agc.py agc.py    Best AGC-T: DAX RX audio, calibrator, filter suppress/restore
+    session_aether.py aether.py   AetherSDR shared-pan bridge (localhost UDP 7331)
+    dxcluster.py pgxl.py     DX cluster Telnet client, Power Genius XL telemetry
     params.py meters.py spectrum.py station.py settings.py
-    sim.py                   simulated FLEX radio (tests and --demo)
+    sim.py                   simulated FLEX radio, DX cluster, PGXL and Aether (tests and --demo)
     ui/                      PySide6 window, radio and station panels, meter/spectrum widgets
-  tests/                     40 tests: core parity, protocol logic, end-to-end vs the simulator, UI
+  tests/                     57 tests: core parity, protocol logic, end-to-end vs the simulators, UI
   deploy/install.sh
 ```
 

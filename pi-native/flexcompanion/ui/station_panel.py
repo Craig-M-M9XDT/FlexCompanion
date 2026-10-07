@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import Callable, List
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
+                               QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget)
 
 from ..session import RadioSession
 from ..station import BANDS, MODES, StationController
@@ -85,19 +86,91 @@ class StationPanel(QScrollArea):
         ql.addWidget(self.status)
         root.addWidget(qcard)
 
-        # amplifier
+        # amplifier: FLEX-reported OPERATE / STANDBY + direct Power Genius XL telemetry
         acard, al = card("Amplifier")
         arow = QHBoxLayout()
         self.amp_info = label("No FLEX-reported amplifier", "dim")
+        self.amp_info.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         arow.addWidget(self.amp_info, 1)
         self.amp_btn = button("OPERATE")
         self.amp_btn.clicked.connect(station.toggle_amplifier)
         arow.addWidget(self.amp_btn)
         al.addLayout(arow)
+        prow2 = QHBoxLayout()
+        self.pg_host = QLineEdit(station.settings.pgxl_host if station.settings else "")
+        self.pg_host.setPlaceholderText("PGXL IP (blank = the radio's amplifier)")
+        prow2.addWidget(self.pg_host, 1)
+        self.pg_port = QLineEdit(str(station.settings.pgxl_port if station.settings else 9008))
+        self.pg_port.setMaximumWidth(110)
+        prow2.addWidget(self.pg_port)
+        self.pg_connect = button("CONNECT", role="primary")
+        self.pg_connect.clicked.connect(self._pgxl_connect)
+        self.pg_disconnect = button("DISCONNECT")
+        self.pg_disconnect.clicked.connect(station.pgxl_disconnect)
+        prow2.addWidget(self.pg_connect)
+        prow2.addWidget(self.pg_disconnect)
+        al.addLayout(prow2)
+        self.amp_tiles = {}
+        tiles = []
+        for key, title in (("pwr", "POWER"), ("swr", "SWR"), ("id", "CURRENT"), ("temp", "PA TEMP"),
+                           ("vdd", "VDD"), ("vac", "MAINS")):
+            box = QFrame()
+            bl = QVBoxLayout(box)
+            bl.setContentsMargins(0, 0, 0, 0)
+            bl.setSpacing(0)
+            bl.addWidget(label(title, "section"))
+            val = label("—", "title")
+            bl.addWidget(val)
+            self.amp_tiles[key] = val
+            tiles.append(box)
+        al.addWidget(grid(tiles, 3))
+        self.pg_status = label("", "dim")
+        self.pg_status.setWordWrap(True)
+        al.addWidget(self.pg_status)
+        self.pg_alert = label("", "message")
+        self.pg_alert.setWordWrap(True)
+        al.addWidget(self.pg_alert)
         self.licence = label("", "dim")
         self.licence.setWordWrap(True)
         al.addWidget(self.licence)
         root.addWidget(acard)
+
+        # DX cluster
+        dcard, dl = card("DX cluster")
+        drow = QHBoxLayout()
+        st_ = station.settings
+        self.dx_host = QLineEdit(st_.dx_host if st_ else "")
+        self.dx_host.setPlaceholderText("Cluster host, e.g. dxc.example.org")
+        drow.addWidget(self.dx_host, 1)
+        self.dx_port = QLineEdit(str(st_.dx_port if st_ else 7300))
+        self.dx_port.setMaximumWidth(110)
+        drow.addWidget(self.dx_port)
+        self.dx_call = QLineEdit(st_.dx_callsign if st_ else "")
+        self.dx_call.setPlaceholderText("Your call")
+        self.dx_call.setMaximumWidth(130)
+        drow.addWidget(self.dx_call)
+        dl.addLayout(drow)
+        drow2 = QHBoxLayout()
+        self.dx_connect = button("CONNECT", role="primary")
+        self.dx_connect.clicked.connect(self._dx_connect)
+        self.dx_disconnect = button("DISCONNECT")
+        self.dx_disconnect.clicked.connect(station.dx_disconnect)
+        drow2.addWidget(self.dx_connect)
+        drow2.addWidget(self.dx_disconnect)
+        self.dx_status = label("", "dim")
+        self.dx_status.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        drow2.addWidget(self.dx_status, 1)
+        dl.addLayout(drow2)
+        self.dx_publish = QCheckBox("Show spots on the radio's panadapters (spot add)")
+        self.dx_publish.setChecked(st_.publish_spots_to_radio if st_ else True)
+        self.dx_publish.toggled.connect(self._publish_toggled)
+        dl.addWidget(self.dx_publish)
+        self.spot_list = QListWidget()
+        self.spot_list.setMinimumHeight(170)
+        self.spot_list.itemClicked.connect(self._spot_tapped)
+        self.spot_list.setToolTip("Tap a spot to tune the target radio to it")
+        dl.addWidget(self.spot_list)
+        root.addWidget(dcard)
 
         # profiles
         pcard, pl = card("Profiles")
@@ -143,9 +216,65 @@ class StationPanel(QScrollArea):
         root.addStretch(1)
 
         station.subscribe(self.refresh)
+        station.subscribe_kind(self._on_kind)
         for slot in ("A", "B"):
             radio_for_slot(slot).subscribe(lambda kind: kind in ("amplifier", "connection") and self.refresh())
         self.refresh()
+
+    def _on_kind(self, kind: str) -> None:
+        if kind == "spots":
+            self._refresh_spots()
+        elif kind == "dx":
+            self._refresh_dx()
+        elif kind == "amp":
+            self._refresh_amp()
+
+    @staticmethod
+    def _port(edit: QLineEdit, default: int) -> int:
+        try:
+            return min(65535, max(1, int(edit.text().strip())))
+        except ValueError:
+            return default
+
+    def _dx_connect(self) -> None:
+        self.st.dx_connect(self.dx_host.text(), self._port(self.dx_port, 7300), self.dx_call.text())
+
+    def _pgxl_connect(self) -> None:
+        self.st.pgxl_connect(self.pg_host.text(), self._port(self.pg_port, 9008))
+
+    def _publish_toggled(self, on: bool) -> None:
+        if self.st.settings is not None:
+            self.st.settings.publish_spots_to_radio = on
+
+    def _spot_tapped(self, item) -> None:
+        spot = item.data(Qt.UserRole)
+        if spot is not None:
+            self.st.tune_spot(spot)
+
+    def _refresh_spots(self) -> None:
+        self.spot_list.clear()
+        for sp in self.st.spots:
+            de = f"   de {sp.spotter}" if sp.spotter else ""
+            it = QListWidgetItem(f"{sp.frequency_text}   {sp.callsign}   {sp.utc}\n{sp.comment}{de}")
+            it.setData(Qt.UserRole, sp)
+            self.spot_list.addItem(it)
+
+    def _refresh_dx(self) -> None:
+        connected = self.st.dx.connected
+        self.dx_status.setText(self.st.dx_status)
+        self.dx_disconnect.setEnabled(connected or self.st.dx_status not in ("Not connected", "Disconnected"))
+
+    def _refresh_amp(self) -> None:
+        a = self.st.amp
+        fmt = a.fmt
+        vals = {"pwr": fmt(a.power_w, "W", 0), "swr": "—" if a.swr != a.swr else f"{a.swr:.2f}:1",
+                "id": fmt(a.current_a, "A"), "temp": fmt(a.temp_c, "°C"), "vdd": fmt(a.vdd, "V"),
+                "vac": fmt(a.vac, "V", 0)}
+        for k, v in vals.items():
+            self.amp_tiles[k].setText(v)
+        self.pg_status.setText(f"Power Genius XL: {self.st.pgxl_status}")
+        self.pg_alert.setText(self.st.amp_alert)
+        self.pg_disconnect.setEnabled(self.st.pgxl.connected or self.st.pgxl_status not in ("Not connected", "Disconnected"))
 
     def _target(self, slot: str) -> None:
         self.st.set_target(slot)
@@ -169,3 +298,5 @@ class StationPanel(QScrollArea):
         self.amp_btn.setEnabled(bool(r.amp_handle))
         self.amp_btn.setText("STANDBY" if r.amp_operate else "OPERATE")
         self.licence.setText(r.license_summary if r.connected else "")
+        self._refresh_dx()
+        self._refresh_amp()

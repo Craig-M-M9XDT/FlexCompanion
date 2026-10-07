@@ -24,6 +24,7 @@ is_iq_pcc = core.is_iq_pcc
 parse_meters = core.parse_meters
 parse_audio = core.parse_audio
 fft_db = core.fft_db
+parse_fcsp = core.parse_fcsp
 resample_linear = core.resample_linear
 SpectrumEngine = core.SpectrumEngine
 PCC_METER = core.PCC_METER
