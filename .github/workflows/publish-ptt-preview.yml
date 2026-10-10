@@ -1,9 +1,9 @@
 name: Publish FCC PTT preview v0.6.5
 run-name: PTT preview v0.6.5-ptt-preview.1
 
+# DISABLED: v0.6.5 PTT preview release was retracted at the user's request.
+# Do not republish it on branch pushes or manual dispatch.
 on:
-  push:
-    branches: ['release/ptt-preview-v0.6.5']
   workflow_dispatch:
 
 permissions:
@@ -58,6 +58,7 @@ jobs:
           if-no-files-found: error
 
   prerelease:
+    if: false # Intentionally disabled: v0.6.5 PTT preview has been withdrawn.
     name: Publish GitHub pre-release
     runs-on: ubuntu-24.04
     needs: [windows, raspberry-pi]
