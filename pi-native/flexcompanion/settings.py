@@ -19,7 +19,7 @@ DEFAULT_MACROS = [
     {"Label": "DIGU", "Commands": "@mode DIGU"},
 ]
 
-SLOT_DEFAULTS = {"AnalogueMeter": True, "TxMeter": "Power", "ShowFft": False, "FftSpanKhz": 48.0, "AgcTargetDb": -28.0}
+SLOT_DEFAULTS = {"AnalogueMeter": True, "TxMeter": "Power", "ShowFft": False, "FftSpanKhz": 48.0, "AgcTargetDb": -28.0, "AutoPreservePcPttAudio": True}
 
 
 def config_dir() -> Path:
@@ -41,6 +41,14 @@ class SlotPrefs:
             if k.lower() == key.lower():
                 return v
         return SLOT_DEFAULTS[key]
+
+    @property
+    def auto_preserve_ptt_audio(self) -> bool:
+        return bool(self._get("AutoPreservePcPttAudio"))
+
+    @auto_preserve_ptt_audio.setter
+    def auto_preserve_ptt_audio(self, enabled: bool) -> None:
+        self._d["AutoPreservePcPttAudio"] = bool(enabled)
 
     @property
     def tx_meter(self) -> str:
