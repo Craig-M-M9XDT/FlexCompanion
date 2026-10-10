@@ -54,6 +54,18 @@
       <TextBlock Grid.Row="4" Text="{Binding LastMessage}" Foreground="#FFB84D" TextWrapping="Wrap" FontSize="11" MaxHeight="44"/>
 
       <TabControl Grid.Row="5" IsVisible="{Binding IsConnected}">
+        <TabItem Header="PTT / MIC">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="9" Margin="6,8,6,8">
+              <TextBlock Text="HARDWARE PTT / PC MICROPHONE" FontWeight="Bold" Foreground="#8EA8C0"/>
+              <CheckBox Content="Automatically preserve PC audio" IsChecked="{Binding AutoPreservePcPttAudio, Mode=TwoWay}"/>
+              <TextBlock Text="{Binding PttMicSourceStatus}" TextWrapping="Wrap" Opacity="0.75"/>
+              <TextBlock Text="{Binding PttHardwareStatus}" TextWrapping="Wrap" Opacity="0.75"/>
+              <TextBlock Text="{Binding PttOverrideStatus}" TextWrapping="Wrap" Foreground="#FFB84D"/>
+              <TextBlock Text="Requires a radio-advertised PTT Override API; 4.2.20 cannot preserve PC audio through Companion alone." TextWrapping="Wrap" Opacity="0.75"/>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
         <TabItem Header="DSP">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="8" Margin="2,8,2,2">
