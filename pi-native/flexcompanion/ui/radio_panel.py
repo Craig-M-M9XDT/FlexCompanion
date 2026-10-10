@@ -120,6 +120,25 @@ class RadioPanel(QScrollArea):
         self.agc_card = AgcCard(session, prefs)
         root.addWidget(self.agc_card)
 
+        # ── PTT audio source / firmware capability ──
+        ptt_card, ptt_layout = card("PTT / PC AUDIO")
+        self.ptt_auto = QCheckBox("Automatically preserve PC audio with rear-panel PTT")
+        self.ptt_auto.setChecked(prefs.auto_preserve_ptt_audio)
+        self.ptt_auto.toggled.connect(self._ptt_toggled)
+        ptt_layout.addWidget(self.ptt_auto)
+        self.ptt_source = label("", "dim")
+        self.ptt_source.setWordWrap(True)
+        ptt_layout.addWidget(self.ptt_source)
+        self.ptt_status = label("", "dim")
+        self.ptt_status.setWordWrap(True)
+        ptt_layout.addWidget(self.ptt_status)
+        ptt_note = label(
+            "Requires a radio-advertised PTT Override API. SmartSDR 4.2.20 "
+            "hardware PTT replaces PC audio inside the radio.", "dim")
+        ptt_note.setWordWrap(True)
+        ptt_layout.addWidget(ptt_note)
+        root.addWidget(ptt_card)
+
         # ── DSP ──
         self.rows: List[ParamRow] = []
         self.dsp_cards: List[QWidget] = []
@@ -229,6 +248,12 @@ class RadioPanel(QScrollArea):
             self.s.set_tx_meter(key)
             self.prefs.tx_meter = key
 
+    def _ptt_toggled(self, on: bool) -> None:
+        if self._updating:
+            return
+        self.prefs.auto_preserve_ptt_audio = on
+        self.s.set_auto_preserve_ptt(on)
+
     def _fft_toggled(self, on: bool) -> None:
         self.fft_btn.setText("ON" if on else "OFF")
         if not self._updating:
@@ -259,6 +284,8 @@ class RadioPanel(QScrollArea):
         elif kind == "controls":
             for r in self.rows:
                 r.refresh()
+        elif kind == "ptt":
+            self._refresh_ptt()
         elif kind == "message":
             self.message.setText(self.s.last_message)
         elif kind in ("slices", "selection"):
@@ -287,10 +314,20 @@ class RadioPanel(QScrollArea):
         self._refresh_stations()
         self._refresh_slices()
         self._refresh_mode_bits()
+        self._refresh_ptt()
         for r in self.rows:
             r.refresh()
         self._refresh_meter()
         self._refresh_spectrum()
+
+    def _refresh_ptt(self) -> None:
+        self._updating = True
+        try:
+            self.ptt_auto.setChecked(self.s.ptt.auto)
+        finally:
+            self._updating = False
+        self.ptt_source.setText(self.s.ptt.source_text)
+        self.ptt_status.setText(self.s.ptt.summary if self.s.connected else "PTT audio policy: disconnected.")
 
     def _refresh_stations(self) -> None:
         self._updating = True

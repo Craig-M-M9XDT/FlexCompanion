@@ -26,6 +26,8 @@ public sealed class SlotPrefs
     /// <summary>Displayed FFT width, kHz (3, 6, 12, 24, 48, 96 or 192).</summary>
     public double FftSpanKhz { get; set; } = 48;
     public double AgcTargetDb { get; set; } = -28;
+    /// <summary>Automatically disable hardware-mic PTT override on radios that advertise the API when PC mic is selected.</summary>
+    public bool AutoPreservePcPttAudio { get; set; } = true;
 }
 
 /// <summary>Stored as JSON in %AppData%\FlexCompanion\settings.json.</summary>

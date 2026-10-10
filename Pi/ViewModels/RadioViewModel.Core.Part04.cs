@@ -153,6 +153,7 @@ public sealed partial class RadioViewModel
 
     void OnStatus(string body)
     {
+        OnPttRadioStatus(body);
         if (body.StartsWith("meter ", StringComparison.Ordinal)) { HandleMeterStatus(body[6..]); return; }
 
         var tok = Kv.Tokenize(body);

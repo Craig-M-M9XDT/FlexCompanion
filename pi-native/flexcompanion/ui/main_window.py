@@ -131,7 +131,8 @@ class MainWindow(QMainWindow):
             p = settings.slot(slot)
             self.sessions[slot] = RadioSession(slot, self.dispatcher, saver=settings.network_saver,
                                                tx_meter=p.tx_meter, show_fft=p.show_fft, fft_span_khz=p.fft_span_khz,
-                                               agc_target_db=p.agc_target_db)
+                                               agc_target_db=p.agc_target_db,
+                                               auto_preserve_ptt=p.auto_preserve_ptt_audio)
             self.sessions[slot].subscribe(lambda kind, slot=slot: self._session_event(slot, kind))
         self.station = StationController(lambda s: self.sessions[s], settings.station_target_slot, settings.macros,
                                          dispatcher=self.dispatcher, settings=settings)
