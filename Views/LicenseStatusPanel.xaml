@@ -1,0 +1,87 @@
+<UserControl x:Class="FlexCompanion.Views.LicenseStatusPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{StaticResource TextBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="12,10,12,18">
+            <TextBlock Text="{Binding RadioTitle}" FontSize="18" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource TextDimBrush}" Margin="0,3,0,4"/>
+            <TextBlock Text="{Binding LicenseConnectionText}" Foreground="{StaticResource AccentBrush}"
+                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+            <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}"
+                    BorderThickness="1" CornerRadius="5" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="LICENCE SUMMARY" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                    <TextBlock Margin="0,7,0,0" Text="{Binding LicenseVersionText, StringFormat='Licensed major versions: {0}'}"/>
+                    <TextBlock Margin="0,3,0,0" Text="{Binding LicenseIssuedText, StringFormat='Issue date: {0}'}"/>
+                    <TextBlock Margin="0,3,0,0" Text="{Binding LicenseLastUpdate, StringFormat='Last received: {0}'}"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="REPORTED FEATURES" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,17,0,5"/>
+            <TextBlock Text="{Binding LicenseFeatureCount}" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,7"/>
+            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="5"
+                    Background="{StaticResource CardBrush}" Padding="8">
+                <StackPanel>
+                    <Grid Margin="5,3,5,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/><ColumnDefinition Width="100"/><ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Feature" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="1" Text="State" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="2" Text="Reason reported by radio" FontWeight="Bold"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding LicenseFeatures}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="5,7">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/><ColumnDefinition Width="100"/><ColumnDefinition Width="3*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding State}" Foreground="{StaticResource AccentBrush}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Reason}" TextWrapping="Wrap"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="REPORTED SUBSCRIPTIONS" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,17,0,5"/>
+            <TextBlock Text="{Binding LicenseSubscriptionCount}" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,7"/>
+            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="5"
+                    Background="{StaticResource CardBrush}" Padding="8">
+                <StackPanel>
+                    <Grid Margin="5,3,5,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/><ColumnDefinition Width="3*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Subscription" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="1" Text="Expiry (radio reported)" FontWeight="Bold"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding LicenseSubscriptions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="5,7">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/><ColumnDefinition Width="3*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Expiration}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+            <TextBlock Margin="0,14,0,0" Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap"
+                       Text="Read only. Missing features are not assumed disabled. Radio-side signature and entitlement checks remain authoritative. Some firmware versions may not report all fields."/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
