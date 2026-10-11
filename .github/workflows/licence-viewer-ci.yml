@@ -1,0 +1,23 @@
+name: Licence viewer validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/read-only-license-viewer]
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Compile WPF application
+        run: dotnet build FlexCompanion.csproj -c Release
+      - name: Check licence status parsing
+        run: dotnet run --project LicenseTests/LicenseTests.csproj -c Release
