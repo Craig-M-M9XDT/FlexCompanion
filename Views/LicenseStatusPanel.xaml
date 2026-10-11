@@ -13,9 +13,9 @@
                     BorderThickness="1" CornerRadius="5" Padding="12">
                 <StackPanel>
                     <TextBlock Text="LICENCE SUMMARY" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
-                    <TextBlock Margin="0,7,0,0" Text="{Binding LicenseVersionText, StringFormat=Licensed major versions: {0}}"/>
-                    <TextBlock Margin="0,3,0,0" Text="{Binding LicenseIssuedText, StringFormat=Issue date: {0}}"/>
-                    <TextBlock Margin="0,3,0,0" Text="{Binding LicenseLastUpdate, StringFormat=Last received: {0}}"/>
+                    <TextBlock Margin="0,7,0,0" Text="{Binding LicenseVersionText, StringFormat='Licensed major versions: {0}'}"/>
+                    <TextBlock Margin="0,3,0,0" Text="{Binding LicenseIssuedText, StringFormat='Issue date: {0}'}"/>
+                    <TextBlock Margin="0,3,0,0" Text="{Binding LicenseLastUpdate, StringFormat='Last received: {0}'}"/>
                 </StackPanel>
             </Border>
 
