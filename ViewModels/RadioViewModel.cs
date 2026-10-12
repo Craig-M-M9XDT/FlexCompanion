@@ -315,7 +315,7 @@ public sealed partial class RadioViewModel : ObservableObject
             if (udp.Code != 0)
                 LastMessage = $"Meter stream registration failed ({FlexClient.ErrorText(udp.Code)}). Controls still work.";
 
-            foreach (var sub in new[] { "sub client all", "sub slice all", "sub pan all", "sub tx all", "sub amplifier all", "sub license all" })
+            foreach (var sub in new[] { "sub client all", "sub slice all", "sub pan all", "sub tx all", "sub amplifier all", "sub license all", "sub apd all" })
                 await c.SendAsync(sub);
 
             // Do not subscribe to every meter. A typical FLEX session exposes dozens of meters,
