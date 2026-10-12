@@ -78,7 +78,12 @@ public sealed class StationViewModel : ObservableObject, IDisposable
         DxDisconnectCommand = new RelayCommand(_dx.Disconnect);
         TuneSpotCommand = new RelayCommand(async p => { if (p is SpotItem s) await TuneSpotAsync(s); });
         PgxlConnectCommand = new RelayCommand(async () => await ConnectPgxlAsync());
-        PgxlDisconnectCommand = new RelayCommand(_pgxl.Disconnect);
+        PgxlDisconnectCommand = new RelayCommand(() =>
+        {
+            _pgxl.Disconnect();
+            PgxlStatus = "Disconnected";
+            OnPropertyChanged(nameof(PgxlConnected));
+        });
         AmpOperateCommand = new RelayCommand(async () => await ToggleAmpAsync());
 
         _dx.AutoReconnect = _settings.DxClusterAutoReconnect;
