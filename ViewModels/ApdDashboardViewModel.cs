@@ -31,6 +31,7 @@ public sealed class ApdDashboardViewModel : ObservableObject, IDisposable
         Radio.PropertyChanged += OnRadioChanged;
         Radio.ApdSamplers.CollectionChanged += OnSamplerListChanged;
         Station.PropertyChanged += OnStationChanged;
+        Radio.SetApdMonitoring(true);
         RefreshSamplerSelection();
     }
 
@@ -142,6 +143,7 @@ public sealed class ApdDashboardViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        Radio.SetApdMonitoring(false);
         Radio.PropertyChanged -= OnRadioChanged;
         Radio.ApdSamplers.CollectionChanged -= OnSamplerListChanged;
         Station.PropertyChanged -= OnStationChanged;
