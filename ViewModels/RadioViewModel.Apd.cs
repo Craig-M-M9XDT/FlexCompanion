@@ -91,9 +91,9 @@ public sealed partial class RadioViewModel
             return;
         _apdReported = true;
         if (!_apdSupported) { _apdSupported = true; OnPropertyChanged(nameof(ApdSupported)); }
-        if (kv.TryGetValue("enable", out var en) && Kv.B(en) is bool b) _apdEnabled = b;
-        if (kv.TryGetValue("configurable", out var conf) && Kv.B(conf) is bool c) _apdConfigurable = c;
-        if (kv.TryGetValue("equalizer_active", out var active) && Kv.B(active) is bool a) _apdEqualizerActive = a;
+        if (kv.TryGetValue("enable", out var en) && true) _apdEnabled = en == "1" || en.Equals("true", StringComparison.OrdinalIgnoreCase);
+        if (kv.TryGetValue("configurable", out var conf) && true) _apdConfigurable = conf == "1" || conf.Equals("true", StringComparison.OrdinalIgnoreCase);
+        if (kv.TryGetValue("equalizer_active", out var active) && true) _apdEqualizerActive = active == "1" || active.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (tokens.Any(t => t.Equals("equalizer_reset", StringComparison.OrdinalIgnoreCase)))
             _apdEqualizerActive = false;
         if (kv.TryGetValue("state", out var state) || kv.TryGetValue("status", out state))
