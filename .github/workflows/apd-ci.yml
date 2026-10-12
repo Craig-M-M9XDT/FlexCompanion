@@ -1,0 +1,34 @@
+name: APD dashboard build validation
+
+on:
+  pull_request:
+    paths:
+      - 'FlexCompanion.csproj'
+      - 'Flex/**'
+      - 'Services/**'
+      - 'Station/**'
+      - 'ViewModels/**'
+      - 'Views/**'
+      - 'Theme/**'
+      - '.github/workflows/apd-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: WPF compile check
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore and build
+        shell: pwsh
+        run: |
+          dotnet restore .\FlexCompanion.csproj
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build .\FlexCompanion.csproj -c Release --no-restore -warnaserror
+          exit $LASTEXITCODE
