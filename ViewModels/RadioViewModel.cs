@@ -420,6 +420,7 @@ public sealed partial class RadioViewModel : ObservableObject
         Interlocked.Exchange(ref _meterUiPending, 0);
         _interlockTx = false;
         _licenseFeatures.Clear();
+        ClearApdState();
         AmplifierHandle = AmplifierModel = AmplifierIp = AmplifierState = "";
         AmplifierOperate = false;
         OnPropertyChanged(nameof(LicenseSummary));
@@ -437,6 +438,7 @@ public sealed partial class RadioViewModel : ObservableObject
     {
         var kv = Kv.Parse(Kv.Tokenize(msg.Replace(',', ' ')));
         var model = kv.GetValueOrDefault("model") ?? "";
+        OnApdRadioInfo(model);
         var name = kv.GetValueOrDefault("nickname") ?? kv.GetValueOrDefault("name") ?? "";
         var serial = kv.GetValueOrDefault("chassis_serial") ?? kv.GetValueOrDefault("serial") ?? "";
         serial = serial.Trim().Trim('"');
@@ -636,6 +638,7 @@ public sealed partial class RadioViewModel : ObservableObject
     void OnStatus(string body)
     {
         if (body.StartsWith("meter ", StringComparison.Ordinal)) { HandleMeterStatus(body[6..]); return; }
+        if (body.StartsWith("apd ", StringComparison.OrdinalIgnoreCase)) { OnApdStatus(body); return; }
 
         var tok = Kv.Tokenize(body);
         if (tok.Count == 0) return;
