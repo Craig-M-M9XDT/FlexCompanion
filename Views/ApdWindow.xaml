@@ -1,0 +1,171 @@
+<Window x:Class="FlexCompanion.Views.ApdWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:FlexCompanion.Controls"
+        Title="Flex Control Companion · SmartSignal APD Diagnostics"
+        Width="850" Height="790" MinWidth="670" MinHeight="580"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource Bg0Brush}"
+        Foreground="{StaticResource TextBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="18">
+            <DockPanel Margin="0,0,0,12">
+                <TextBlock Text="APD · FULL TX LOOP" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                <TextBlock Text="{Binding Radio.RadioTitle}" DockPanel.Dock="Right"
+                           Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Right" Margin="20,6,0,0"/>
+            </DockPanel>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="SMARTSIGNAL STATUS" Style="{StaticResource Section}"/>
+                    <TextBlock Text="{Binding Radio.ApdStateText}" FontSize="17" FontWeight="Bold"
+                               Foreground="{StaticResource GreenBrush}" Margin="0,2,0,4"/>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="The APD state is reported by the radio. Equalizer Active is not an IMD measurement. APD is unavailable on FLEX-6000 models."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,4">
+                        <Button Content="Enable / disable APD" Command="{Binding ToggleCommand}"
+                                ToolTip="Send the documented SmartSDR apd enable command. Current state changes only after radio confirmation."/>
+                        <Button Content="Reset equalizer" Command="{Binding ResetCommand}" Margin="10,0,0,0"
+                                ToolTip="Request a new correction solution. Disabled while transmitting."/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Radio.ApdLastAction}" Style="{StaticResource Hint}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="REAL-TIME RADIO TX METERS" Style="{StaticResource Section}"/>
+                    <UniformGrid Columns="2" Margin="0,4,0,0">
+                        <StackPanel Margin="4,4,15,9">
+                            <DockPanel>
+                                <TextBlock Text="MIC PEAK (radio scale)" Style="{StaticResource MeterTag}"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Radio.MicDb, StringFormat={}{0:0.0} dB}"
+                                           HorizontalAlignment="Right"/>
+                            </DockPanel>
+                            <c:LevelMeter Height="18" Minimum="-60" Maximum="0" WarnValue="-10" DangerValue="-1"
+                                          BaseColor="#00B4D8" Value="{Binding Radio.MicDb}"/>
+                        </StackPanel>
+                        <StackPanel Margin="4,4,15,9">
+                            <DockPanel>
+                                <TextBlock Text="PROCESSOR PEAK" Style="{StaticResource MeterTag}"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Radio.CompDb, StringFormat={}{0:0.0} dB}"/>
+                            </DockPanel>
+                            <c:LevelMeter Height="18" Minimum="0" Maximum="30" WarnValue="22" DangerValue="28"
+                                          BaseColor="#4DD87A" Value="{Binding Radio.CompDb}"/>
+                        </StackPanel>
+                        <StackPanel Margin="4,4,15,9">
+                            <DockPanel>
+                                <TextBlock Text="FLEX TX FORWARD POWER" Style="{StaticResource MeterTag}"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Radio.PowerText}"/>
+                            </DockPanel>
+                            <c:LevelMeter Height="18" Minimum="0" Maximum="{Binding Radio.PowerMax}"
+                                          WarnValue="100000" DangerValue="100000" BaseColor="#FF4D4D"
+                                          Value="{Binding Radio.FwdWatts}"/>
+                        </StackPanel>
+                        <StackPanel Margin="4,4,15,9">
+                            <DockPanel>
+                                <TextBlock Text="FLEX SWR" Style="{StaticResource MeterTag}"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Radio.SwrText}"/>
+                            </DockPanel>
+                            <c:LevelMeter Height="18" Minimum="1" Maximum="3" WarnValue="1.8" DangerValue="2.5"
+                                          BaseColor="#4DD87A" Value="{Binding Radio.Swr}"/>
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock Style="{StaticResource Hint}" Text="Radio TX power setting and microphone level are available in the TX tab. These meters represent radio-reported values; they do not directly measure RF feedback, compression IMD or occupied bandwidth."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="EXTERNAL AMPLIFIER · POWER GENIUS XL" Style="{StaticResource Section}"/>
+                    <TextBlock Text="{Binding AmpSourceText}" Style="{StaticResource Hint}" Margin="0,0,0,8"/>
+                    <UniformGrid Columns="2">
+                        <StackPanel>
+                            <TextBlock Text="AMPLIFIER OUTPUT" Style="{StaticResource MeterTag}"/>
+                            <TextBlock Text="{Binding AmpPowerText}" FontSize="22" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="AMPLIFIER SWR" Style="{StaticResource MeterTag}"/>
+                            <TextBlock Text="{Binding AmpSwrText}" FontSize="22" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock Text="PGXL telemetry is assumed to represent this radio only when its Station target slot matches. Other amplifiers need a separate supported telemetry integration."
+                               Style="{StaticResource Hint}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="APD FEEDBACK SAMPLER" Style="{StaticResource Section}"/>
+                    <TextBlock Text="Select the transmit antenna and one of the valid sampler inputs actually reported by the radio."
+                               Style="{StaticResource Hint}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="TX antenna" Style="{StaticResource MeterTag}" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding Radio.ApdSamplers}" SelectedItem="{Binding SelectedAntenna}"
+                                      DisplayMemberPath="TxAntenna" MinHeight="25"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                            <TextBlock Text="Sampler / RF input" Style="{StaticResource MeterTag}" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding DesiredPort}" MinHeight="25"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="Apply sampler" Command="{Binding ApplySamplerCommand}"
+                                VerticalAlignment="Bottom" Height="27"
+                                ToolTip="Changes the radio configuration, not any physical attenuator. Disabled during TX."/>
+                    </Grid>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Sampler availability and the applied port come from APD status; no unsupported port selections are sent. Switching sampler sources requires correct RF cabling, isolation and levels."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="FEEDBACK POWER BUDGET · CALCULATED, NOT MEASURED" Style="{StaticResource Section}"/>
+                    <TextBlock Text="External amplifier → directional RF coupler → any inline attenuator → selected FLEX sampler input"
+                               Margin="0,3,0,12" Foreground="{StaticResource TextDimBrush}"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Coupler coupling loss (dB)" Style="{StaticResource MeterTag}" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding CouplerLossDb, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}"
+                                     ToolTip="Enter the published coupling loss of your physical RF sampler; default 60 dB is illustrative."/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                            <TextBlock Text="Inline pad / cable loss (dB)" Style="{StaticResource MeterTag}" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding InlineLossDb, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True}"
+                                     ToolTip="Enter actual additional loss. This value NEVER controls external RF hardware."/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Combined loss" Style="{StaticResource MeterTag}" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding TotalLossText}" FontSize="13"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{Binding FeedbackEstimateText}" FontWeight="Bold" FontSize="20"
+                               Foreground="{StaticResource AmberBrush}" Margin="0,4,0,8"/>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Estimate = 10 log10(amplifier watts × 1000) − coupler dB − inline/cable dB. This is NOT a measured sampler level, not an overload detector, and not a verified safe operating range. Changing the dB entries only changes the displayed estimate; it never adjusts RF hardware. Confirm the radio's RF input limits independently."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="APD DIAGNOSTIC LIMITS" Style="{StaticResource Section}"/>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,4"
+                               Text="Sampler ADC level: not exposed by the confirmed public API. Actual feedback signal strength cannot yet be shown."/>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,4"
+                               Text="IMD before/after, correction coefficients, ALC and distortion reduction: not measured by this panel. No arbitrary 'good/bad' thresholds are displayed."/>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="For calibrated spectral comparison, use a suitably rated RF sampler and independent spectrum/IQ measurement; never connect amplifier RF output directly to a receiver sampler input."/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Window>
