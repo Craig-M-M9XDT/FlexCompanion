@@ -971,6 +971,15 @@ public sealed partial class RadioViewModel : ObservableObject
             AddOptional(MultiNeedle3);
         }
         else AddOptional(TxMeter);
+
+        // The separate APD window needs its own radio TX-chain samples even if
+        // the main panel uses a power/SWR-only meter layout.
+        if (_apdMonitorActive)
+        {
+            Add(_micId);
+            Add(_compId);
+            Add(_alcId);
+        }
         return ids;
     }
 
