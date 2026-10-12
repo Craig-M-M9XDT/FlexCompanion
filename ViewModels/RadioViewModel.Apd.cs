@@ -11,6 +11,19 @@ public sealed record ApdSamplerEntry(string TxAntenna, string SelectedPort, IRea
 
 public sealed partial class RadioViewModel
 {
+    bool _apdMonitorActive;
+    double _apdAlcDb = double.NaN;
+    public double ApdAlcDb { get => _apdAlcDb; private set { if (Set(ref _apdAlcDb, value)) OnPropertyChanged(nameof(ApdAlcText)); } }
+    public string ApdAlcText => double.IsFinite(ApdAlcDb) ? $"{ApdAlcDb:0.0} dBFS" : "Not reported";
+
+    /// <summary>Request microphone, processor and ALC meters while the APD window is open.</summary>
+    public void SetApdMonitoring(bool active)
+    {
+        if (_apdMonitorActive == active) return;
+        _apdMonitorActive = active;
+        ScheduleMeterRefresh();
+    }
+
     bool _apdSupported;
     bool _apdReported;
     bool _apdEnabled;
@@ -113,6 +126,7 @@ public sealed partial class RadioViewModel
     {
         _apdSupported = _apdReported = _apdEnabled = _apdConfigurable = _apdEqualizerActive = false;
         _apdReportedPhase = "";
+        ApdAlcDb = double.NaN;
         ApdSamplers.Clear();
         ApdLastAction = "APD controls have not been used.";
         OnPropertyChanged(nameof(ApdSupported));
