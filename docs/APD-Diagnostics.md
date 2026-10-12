@@ -11,8 +11,10 @@ SmartSDR's APD controls or for calibrated RF instrumentation.
   not prove a specific dB of IMD improvement.
 - Selected sampler for each TX antenna and valid sampler choices **reported by
   the radio**. A sampler map without the `configurable` flag remains read-only.
-- Radio power, SWR, microphone peak and compressor peak from Companion's existing
-  meter subscription and TX status paths.
+- Radio power, SWR, microphone peak, compressor peak and software ALC (when
+  the radio advertises a TX:ALC meter) from Companion's meter and TX status
+  paths. While the APD window is open, it selectively subscribes to the audio
+  and ALC meters even when the main panel is set to display only RF power.
 - Power Genius XL output watts and SWR, **only** when the existing PGXL TCP
   telemetry is connected and its Station target slot matches the APD window's
   radio. PGXL telemetry is not automatically associated with other radios.
