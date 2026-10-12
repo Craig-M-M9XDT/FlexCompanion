@@ -63,7 +63,7 @@ public sealed partial class RadioViewModel
             string ant = sampler.GetValueOrDefault("tx_ant")?.ToUpperInvariant() ?? "";
             if (ant.Length == 0 || !sampler.ContainsKey("valid_samplers") && !sampler.ContainsKey("selected_sampler"))
                 return;
-            string selected = sampler.GetValueOrDefault("selected_sampler")?.ToUpperInvariant() ?? "INTERNAL";
+            string selected = sampler.GetValueOrDefault("selected_sampler")?.ToUpperInvariant() ?? "";
             var available = new List<string> { "INTERNAL" };
             if (sampler.TryGetValue("valid_samplers", out var candidates))
             {
@@ -80,6 +80,8 @@ public sealed partial class RadioViewModel
                     { existing = i; break; }
             if (existing >= 0 && !sampler.ContainsKey("valid_samplers"))
                 available = ApdSamplers[existing].AvailablePorts.ToList();
+            if (selected.Length == 0 && existing >= 0) selected = ApdSamplers[existing].SelectedPort;
+            if (selected.Length == 0) selected = "INTERNAL";
             var entry = new ApdSamplerEntry(ant, selected, available);
             if (existing >= 0) ApdSamplers[existing] = entry;
             else ApdSamplers.Add(entry);
@@ -91,9 +93,9 @@ public sealed partial class RadioViewModel
             return;
         _apdReported = true;
         if (!_apdSupported) { _apdSupported = true; OnPropertyChanged(nameof(ApdSupported)); }
-        if (kv.TryGetValue("enable", out var en) && true) _apdEnabled = en == "1" || en.Equals("true", StringComparison.OrdinalIgnoreCase);
-        if (kv.TryGetValue("configurable", out var conf) && true) _apdConfigurable = conf == "1" || conf.Equals("true", StringComparison.OrdinalIgnoreCase);
-        if (kv.TryGetValue("equalizer_active", out var active) && true) _apdEqualizerActive = active == "1" || active.Equals("true", StringComparison.OrdinalIgnoreCase);
+        if (kv.TryGetValue("enable", out var en)) _apdEnabled = en == "1" || en.Equals("true", StringComparison.OrdinalIgnoreCase);
+        if (kv.TryGetValue("configurable", out var conf)) _apdConfigurable = conf == "1" || conf.Equals("true", StringComparison.OrdinalIgnoreCase);
+        if (kv.TryGetValue("equalizer_active", out var active)) _apdEqualizerActive = active == "1" || active.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (tokens.Any(t => t.Equals("equalizer_reset", StringComparison.OrdinalIgnoreCase)))
             _apdEqualizerActive = false;
         if (kv.TryGetValue("state", out var state) || kv.TryGetValue("status", out state))
