@@ -69,6 +69,14 @@
                             <c:LevelMeter Height="18" Minimum="1" Maximum="3" WarnValue="1.8" DangerValue="2.5"
                                           BaseColor="#4DD87A" Value="{Binding Radio.Swr}"/>
                         </StackPanel>
+                        <StackPanel Margin="4,4,15,9">
+                            <DockPanel>
+                                <TextBlock Text="SOFTWARE ALC (where reported)" Style="{StaticResource MeterTag}"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Radio.ApdAlcText}"/>
+                            </DockPanel>
+                            <c:LevelMeter Height="18" Minimum="-50" Maximum="0" WarnValue="-4" DangerValue="-0.5"
+                                          BaseColor="#00B4D8" Value="{Binding Radio.ApdAlcDb}"/>
+                        </StackPanel>
                     </UniformGrid>
                     <TextBlock Style="{StaticResource Hint}" Text="Radio TX power setting and microphone level are available in the TX tab. These meters represent radio-reported values; they do not directly measure RF feedback, compression IMD or occupied bandwidth."/>
                 </StackPanel>
