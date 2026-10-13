@@ -1,15 +1,28 @@
 # Flex Control Companion — APD LAB development preview
-**Version:** 0.6.5-apd.1 | **Platform:** Windows x64 | **Status:** TEST ONLY
+**Version:** 0.6.5-apd.2 | **Platform:** Windows x64 | **Status:** TEST ONLY
 
 This is a side-by-side portable preview for evaluating the **SmartSignal APD diagnostic dashboard**. It is **not** a production release, and has not been tested against a real FLEX-8000 or Aurora.
 
 ## Installation
 
-1. Extract the GitHub Actions artifact ZIP and then extract the inner `FlexControlCompanion-APD-LAB-v0.6.5-apd.1-win-x64.zip` to a separate folder.
+1. Extract the GitHub Actions artifact ZIP and then extract the inner `FlexControlCompanion-APD-LAB-v0.6.5-apd.2-win-x64.zip` to a separate folder.
 2. Run `FlexCompanion.exe`. The preview is self-contained; .NET need not be installed.
 3. Do **not** replace an existing installed Companion executable. The preview uses a separate settings location: `%APPDATA%\FlexCompanion-APD-LAB\settings.json`.
-4. Connect your APD-capable radio as usual and open the **APD** tab for that slot. A FLEX-6000 does not support APD; the dashboard may show unavailable.
+4. With an APD-capable radio, connect as usual and open the **APD** tab for that slot. Alternatively, **no real radio is required**: use the bundled synthetic FLEX-8600 test server described below. A real FLEX-6000 does not support APD.
 5. When testing the feedback sampler, use only correctly isolated, rated hardware. The debug tool **does not protect RF inputs** from overload.
+
+## Testing with no FLEX-8000 or Aurora — included synthetic FLEX-8600
+
+You **do not need any APD-capable hardware** to check the app's TCP/API, dashboard bindings, sampler controls, calibration-state handling and meter capture.
+
+1. Extract the full portable APD LAB ZIP. It includes `APD-Simulator.exe` beside `FlexCompanion.exe`.
+2. Run `FlexCompanion.exe`, choose an **empty / disconnected** radio slot and open its **APD** tab.
+3. Click **Start simulated FLEX-8600 (NO RF)**. This starts a separate labelled simulator console bound to **127.0.0.1:4992**, connects that slot and opens the APD diagnostics window.
+4. Click **Enable APD** in the dashboard. Synthetic status progresses from CALIBRATING to ACTIVE within about three seconds. Toggle sampler ports and save a status + meter snapshot.
+5. In the simulator console, run `drive 75`, `freq 14.150000`, `ant ANT2` to change synthetic calibration identity and verify status tracking. Try `tx on` to generate **synthetic** forward power meters (still no RF, PTT or SDR connection); `tx off` returns to receive. `reset` clears calibration; `quit` closes the virtual server.
+6. The snapshot will identify the simulated radio by its `APD_SIMULATOR_NO_RF` nickname.
+
+**Safety guarantees:** The simulator listens on localhost only, cannot connect to a real transceiver, provides no RF and explicitly rejects actual PTT/transmit commands and `file download apd_log`. Its example ALC, MIC, SWR, frequency-error and calibration readings are **SYNTHETIC**, not measurements or evidence of SmartSignal hardware behavior. It does not emulate FPGA/DSP predistortion, receiver overload, ADC feedback or RF-path attenuation. Use real hardware later to validate those physical features.
 
 ## Included functionality
 
