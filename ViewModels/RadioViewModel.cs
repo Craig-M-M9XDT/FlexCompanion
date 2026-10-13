@@ -424,6 +424,7 @@ public sealed partial class RadioViewModel : ObservableObject
         _interlockTx = false;
         _licenseFeatures.Clear();
         ClearLicenseView();
+        ResetPttSelect();
         AmplifierHandle = AmplifierModel = AmplifierIp = AmplifierState = "";
         AmplifierOperate = false;
         OnPropertyChanged(nameof(LicenseSummary));
@@ -639,6 +640,7 @@ public sealed partial class RadioViewModel : ObservableObject
 
     void OnStatus(string body)
     {
+        OnPttStatus(body);
         if (body.StartsWith("meter ", StringComparison.Ordinal)) { HandleMeterStatus(body[6..]); return; }
 
         var tok = Kv.Tokenize(body);
