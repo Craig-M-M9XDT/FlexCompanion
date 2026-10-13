@@ -76,7 +76,12 @@ public sealed class AppSettings
     };
 
     public static string Folder =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlexCompanion");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+#if APD_LAB
+            "FlexCompanion-APD-LAB");
+#else
+            "FlexCompanion");
+#endif
 
     public static string FilePath => Path.Combine(Folder, "settings.json");
 
