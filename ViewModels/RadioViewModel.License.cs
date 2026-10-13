@@ -79,6 +79,7 @@ public sealed partial class RadioViewModel
                     _licenseFeatures[item.Name] = (enabled, item.Reason);
                 OnPropertyChanged(nameof(LicenseFeatureCount));
                 OnPropertyChanged(nameof(LicenseSummary));
+                RebuildLicenseFeatureGroups();
                 break;
             }
             case LicenseStatusDecoder.Kind.Subscription:
@@ -116,6 +117,8 @@ public sealed partial class RadioViewModel
     void ClearLicenseView()
     {
         LicenseFeatures.Clear();
+        LicenseFeatureGroups.Clear();
+        OnPropertyChanged(nameof(LicenseCounts));
         LicenseSubscriptions.Clear();
         _licenseMetadata.Clear();
         LicenseConnectionText = "Connect a radio to inspect reported entitlements.";
