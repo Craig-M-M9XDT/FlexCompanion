@@ -205,11 +205,11 @@ public sealed partial class RadioViewModel
         if (resetReported) _apdEqualizerActive = false;
         // FlexLib treats freq+ant+equalizer_active as a coherent calibration
         // heartbeat. Bare 'apd freq=0 ...' is not a calibration identity.
-        if (kv.TryGetValue("ant", out var ant) && !string.IsNullOrWhiteSpace(ant)
+        if (kv.TryGetValue("ant", out var calAnt) && !string.IsNullOrWhiteSpace(calAnt)
             && kv.ContainsKey("equalizer_active")
             && kv.TryGetValue("freq", out var frequency) && Kv.D(frequency) is { } mhz)
         {
-            _apdAntenna = ant;
+            _apdAntenna = calAnt;
             _apdFreqMhz = mhz;
             _apdPowerSetting = kv.TryGetValue("rfpower", out var power)
                 && int.TryParse(power, out var pct) ? pct : null;
