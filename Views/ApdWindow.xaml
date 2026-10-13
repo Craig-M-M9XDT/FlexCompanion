@@ -2,14 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:c="clr-namespace:FlexCompanion.Controls"
-        Title="Flex Control Companion · SmartSignal APD Diagnostics"
+        Title="Flex Control Companion · APD Development Diagnostics"
         Width="850" Height="790" MinWidth="670" MinHeight="580"
         WindowStartupLocation="CenterOwner" Background="{StaticResource Bg0Brush}"
         Foreground="{StaticResource TextBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="18">
             <DockPanel Margin="0,0,0,12">
-                <TextBlock Text="APD · FULL TX LOOP" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                <TextBlock Text="APD · DEVELOPMENT LAB (BETA)" FontSize="20" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
                 <TextBlock Text="{Binding Radio.RadioTitle}" DockPanel.Dock="Right"
                            Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Right" Margin="20,6,0,0"/>
             </DockPanel>
@@ -28,6 +28,12 @@
                                 ToolTip="Request a new correction solution. Disabled while transmitting."/>
                     </StackPanel>
                     <TextBlock Text="{Binding Radio.ApdLastAction}" Style="{StaticResource Hint}"/>
+                    <TextBlock Text="{Binding Radio.ApdCalibrationContext}" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextDimBrush}" Margin="0,9,0,3"/>
+                    <TextBlock Text="{Binding Radio.ApdFrequencyErrorText}" Style="{StaticResource Hint}"
+                               TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <TextBlock Text="APD ACTIVE is verified only when radio-reported frequency, TX antenna and RF drive match the live transmit slice. If information is absent, matching is labelled unverified."
+                               Style="{StaticResource Hint}" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 
@@ -160,6 +166,24 @@
                                Foreground="{StaticResource AmberBrush}" Margin="0,4,0,8"/>
                     <TextBlock Style="{StaticResource Hint}"
                                Text="Estimate = 10 log10(amplifier watts × 1000) − coupler dB − inline/cable dB. This is NOT a measured sampler level, not an overload detector, and not a verified safe operating range. Changing the dB entries only changes the displayed estimate; it never adjusts RF hardware. Confirm the radio's RF input limits independently."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="DEVELOPMENT / APD PROTOCOL DIAGNOSTICS" Style="{StaticResource Section}"/>
+                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,8"
+                               Text="Read-only trace of actual APD status messages plus radio-advertised meter IDs, units and raw samples. The export never requests alpha-only APD downloads, transmits RF, or changes attenuation."/>
+                    <Button Content="Save APD status + meter snapshot…" Click="SaveApdDiagnostics_Click"
+                            HorizontalAlignment="Left" Margin="0,0,0,10"
+                            ToolTip="Exports locally observed status/meter data. Does not call file download apd_log."/>
+                    <TextBlock Text="Recent APD messages (latest at bottom)" Style="{StaticResource MeterTag}"/>
+                    <ListBox ItemsSource="{Binding Radio.ApdStatusHistory}" Height="125"
+                             FontFamily="Consolas" FontSize="11"
+                             HorizontalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                    <TextBlock Text="sample_index is an identifier, not a measured ADC value. Alpha-licensed APD logs are not downloaded by this test build."
+                               Style="{StaticResource Hint}" Margin="0,7,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 
