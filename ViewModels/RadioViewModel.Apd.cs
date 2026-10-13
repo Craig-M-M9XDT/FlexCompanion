@@ -12,6 +12,91 @@ public sealed record ApdSamplerEntry(string TxAntenna, string SelectedPort, IRea
 public sealed partial class RadioViewModel
 {
     bool _apdMonitorActive;
+    readonly ObservableCollection<string> _apdStatusHistory = new();
+    public ObservableCollection<string> ApdStatusHistory => _apdStatusHistory;
+    string _apdAntenna = "";
+    double? _apdFreqMhz;
+    int? _apdPowerSetting;
+    int? _apdSampleIndex;
+    double? _apdTxErrorMilliHz, _apdRxErrorMilliHz;
+    string _apdModel = "";
+
+    public string ApdCalibrationContext =>
+        $"Antenna: {(_apdAntenna.Length > 0 ? _apdAntenna : "not reported")}  |  " +
+        $"Frequency: {(_apdFreqMhz.HasValue ? _apdFreqMhz.Value.ToString("0.000000", System.Globalization.CultureInfo.InvariantCulture) + " MHz" : "not reported")}  |  " +
+        $"RF drive: {(_apdPowerSetting.HasValue ? _apdPowerSetting.Value + "%" : "not reported")}  |  " +
+        $"Sample index: {(_apdSampleIndex.HasValue ? _apdSampleIndex.ToString() : "not reported")}";
+
+    public string ApdFrequencyErrorText =>
+        $"TX frequency error: {(_apdTxErrorMilliHz.HasValue ? _apdTxErrorMilliHz.Value.ToString("0.###") + " mHz" : "not reported")}  |  " +
+        $"RX frequency error: {(_apdRxErrorMilliHz.HasValue ? _apdRxErrorMilliHz.Value.ToString("0.###") + " mHz" : "not reported")}";
+
+    // Null = the radio has not supplied enough metadata to verify this correction.
+    public bool? ApdMatchesCurrentTx
+    {
+        get
+        {
+            if (!ApdEqualizerActive || !IsConnected) return null;
+            if (_apdAntenna.Length == 0 || !_apdFreqMhz.HasValue || !_apdPowerSetting.HasValue) return null;
+            var txSlice = Slices.FirstOrDefault(s => s.State.GetValueOrDefault("tx") == "1" && s.State.GetValueOrDefault("in_use") != "0");
+            if (txSlice == null) return null;
+            string ant = txSlice.State.GetValueOrDefault("txant") ?? txSlice.State.GetValueOrDefault("tx_ant") ?? "";
+            var mhz = Kv.D(txSlice.State.GetValueOrDefault("RF_frequency"));
+            if (ant.Length == 0 || !mhz.HasValue) return null;
+            if (!_apdTxPowerReported) return null;
+            return ant.Equals(_apdAntenna, StringComparison.OrdinalIgnoreCase)
+                && Math.Abs(mhz.Value - _apdFreqMhz.Value) < 0.000001
+                && _txRfPower == _apdPowerSetting.Value;
+        }
+    }
+    bool _apdTxPowerReported;
+
+    void NotifyApdContextChanged()
+    {
+        OnPropertyChanged(nameof(ApdMatchesCurrentTx));
+        OnPropertyChanged(nameof(ApdStateText));
+    }
+
+    /// <summary>Creates a read-only, timestamped diagnostic snapshot; no radio file-download command is sent.</summary>
+    public string CreateApdDiagnosticSnapshot()
+    {
+        var lines = new List<string>
+        {
+            "Flex Control Companion APD LAB — read-only diagnostics",
+            $"Captured UTC: {DateTime.UtcNow:O}",
+            $"Radio: {RadioTitle}; slot {Slot}; connected={IsConnected}",
+            $"APD: {ApdStateText}",
+            ApdCalibrationContext,
+            ApdFrequencyErrorText,
+            $"APD sampler ADC level: NOT EXPOSED BY THE VERIFIED API",
+            $"IMD comparison: NOT MEASURED",
+            $"Physical attenuation: NOT CONTROLLABLE BY COMPANION",
+            "",
+            "Radio-advertised APD samplers:"
+        };
+        foreach (var sampler in ApdSamplers)
+            lines.Add($"{sampler.TxAntenna}: selected={sampler.SelectedPort}, valid={string.Join(",", sampler.AvailablePorts)}");
+        lines.Add("");
+        lines.Add("Radio meter inventory: source and raw sample are uncalibrated protocol values; no ADC assumption.");
+        foreach (var m in _meterDefs.Values.OrderBy(m => m.Id))
+        {
+            var hasRaw = _client != null && _client.Meters.TryGetValue((ushort)m.Id, out _);
+            string raw = hasRaw && _client != null && _client.Meters.TryGetValue((ushort)m.Id, out var value)
+                ? value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "not subscribed / not sampled";
+            lines.Add($"{m.Id}: {m.Source}#{m.Num} {m.Name} [{m.Unit}] raw={raw}");
+        }
+        lines.Add("");
+        lines.Add("Recent APD status stream (most recent last):");
+        lines.AddRange(ApdStatusHistory);
+        return string.Join(Environment.NewLine, lines) + Environment.NewLine;
+    }
+
+    void AppendApdTrace(string message)
+    {
+        if (!_apdMonitorActive) return;
+        _apdStatusHistory.Add($"{DateTime.UtcNow:HH:mm:ss.fff}Z  {message}");
+        while (_apdStatusHistory.Count > 120) _apdStatusHistory.RemoveAt(0);
+    }
     double _apdAlcDb = double.NaN;
     public double ApdAlcDb { get => _apdAlcDb; private set { if (Set(ref _apdAlcDb, value)) OnPropertyChanged(nameof(ApdAlcText)); } }
     public string ApdAlcText => double.IsFinite(ApdAlcDb) ? $"{ApdAlcDb:0.0} dBFS" : "Not reported";
@@ -45,7 +130,9 @@ public sealed partial class RadioViewModel
     public string ApdStateText => !ApdSupported ? "Not available on this radio"
         : !ApdReported ? "Awaiting APD status from firmware"
         : !ApdEnabled ? "OFF"
-        : ApdEqualizerActive ? "ACTIVE · correction in use"
+        : ApdEqualizerActive && ApdMatchesCurrentTx == true ? "ACTIVE · verified for current TX settings"
+        : ApdEqualizerActive && ApdMatchesCurrentTx == false ? "ACTIVE · reported for different TX settings"
+        : ApdEqualizerActive ? "ACTIVE · TX settings match not yet verified"
         : _apdReportedPhase.Length > 0 ? _apdReportedPhase.ToUpperInvariant()
         : "ENABLED · no active solution reported";
 
@@ -53,6 +140,7 @@ public sealed partial class RadioViewModel
     {
         // FLEX-6000 must never be offered APD writes. The status stream is still
         // authoritative if future models advertise APD without a familiar name.
+        _apdModel = model;
         bool supported = model.StartsWith("FLEX-8", StringComparison.OrdinalIgnoreCase)
                       || model.StartsWith("AU-", StringComparison.OrdinalIgnoreCase)
                       || model.StartsWith("AURORA", StringComparison.OrdinalIgnoreCase);
@@ -69,6 +157,7 @@ public sealed partial class RadioViewModel
     {
         var tokens = Kv.Tokenize(body);
         if (tokens.Count < 2 || !tokens[0].Equals("apd", StringComparison.OrdinalIgnoreCase)) return;
+        AppendApdTrace(body);
 
         if (tokens[1].Equals("sampler", StringComparison.OrdinalIgnoreCase))
         {
@@ -103,14 +192,25 @@ public sealed partial class RadioViewModel
 
         var kv = Kv.Parse(tokens.Skip(1));
         bool resetReported = tokens.Any(t => t.Equals("equalizer_reset", StringComparison.OrdinalIgnoreCase));
-        if (!kv.Keys.Any(k => k is "enable" or "configurable" or "equalizer_active" or "state" or "status")
+        if (!kv.Keys.Any(k => k is "enable" or "configurable" or "equalizer_active" or "state" or "status"
+                          or "ant" or "freq" or "rfpower" or "sample_index" or "rx_error_mHz" or "tx_error_mHz")
             && !resetReported) return;
         _apdReported = true;
-        if (!_apdSupported) { _apdSupported = true; OnPropertyChanged(nameof(ApdSupported)); }
+        if (!_apdSupported && !_apdModel.StartsWith("FLEX-6", StringComparison.OrdinalIgnoreCase))
+            { _apdSupported = true; OnPropertyChanged(nameof(ApdSupported)); }
         if (kv.TryGetValue("enable", out var en)) _apdEnabled = en == "1" || en.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (kv.TryGetValue("configurable", out var conf)) _apdConfigurable = conf == "1" || conf.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (kv.TryGetValue("equalizer_active", out var active)) _apdEqualizerActive = active == "1" || active.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (resetReported) _apdEqualizerActive = false;
+        if (kv.TryGetValue("ant", out var ant)) _apdAntenna = ant;
+        if (kv.TryGetValue("freq", out var frequency) && Kv.D(frequency) is { } mhz) _apdFreqMhz = mhz;
+        if (kv.TryGetValue("rfpower", out var power) && int.TryParse(power, out var pct)) _apdPowerSetting = pct;
+        if (kv.TryGetValue("sample_index", out var sample) && int.TryParse(sample, out var index)) _apdSampleIndex = index;
+        if (kv.TryGetValue("tx_error_mHz", out var txerror) && Kv.D(txerror) is { } txerr) _apdTxErrorMilliHz = txerr;
+        if (kv.TryGetValue("rx_error_mHz", out var rxerror) && Kv.D(rxerror) is { } rxerr) _apdRxErrorMilliHz = rxerr;
+        OnPropertyChanged(nameof(ApdCalibrationContext));
+        OnPropertyChanged(nameof(ApdFrequencyErrorText));
+        OnPropertyChanged(nameof(ApdMatchesCurrentTx));
         if (kv.TryGetValue("state", out var state) || kv.TryGetValue("status", out state))
             _apdReportedPhase = state;
         OnPropertyChanged(nameof(ApdReported));
@@ -126,7 +226,16 @@ public sealed partial class RadioViewModel
     {
         _apdSupported = _apdReported = _apdEnabled = _apdConfigurable = _apdEqualizerActive = false;
         _apdReportedPhase = "";
+        _apdAntenna = _apdModel = "";
+        _apdFreqMhz = null;
+        _apdPowerSetting = _apdSampleIndex = null;
+        _apdTxErrorMilliHz = _apdRxErrorMilliHz = null;
+        _apdTxPowerReported = false;
+        ApdStatusHistory.Clear();
         ApdAlcDb = double.NaN;
+        OnPropertyChanged(nameof(ApdCalibrationContext));
+        OnPropertyChanged(nameof(ApdFrequencyErrorText));
+        OnPropertyChanged(nameof(ApdMatchesCurrentTx));
         ApdSamplers.Clear();
         ApdLastAction = "APD controls have not been used.";
         OnPropertyChanged(nameof(ApdSupported));
