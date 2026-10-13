@@ -106,6 +106,7 @@ public sealed partial class RadioViewModel
     {
         if (_apdMonitorActive == active) return;
         _apdMonitorActive = active;
+        if (active) EnsureTxControlMonitor(); // subscribe to confirmed RF-power status for calibration identity
         ScheduleMeterRefresh();
     }
 
