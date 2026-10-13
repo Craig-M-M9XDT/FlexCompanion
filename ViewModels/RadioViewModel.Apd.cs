@@ -203,9 +203,17 @@ public sealed partial class RadioViewModel
         if (kv.TryGetValue("configurable", out var conf)) _apdConfigurable = conf == "1" || conf.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (kv.TryGetValue("equalizer_active", out var active)) _apdEqualizerActive = active == "1" || active.Equals("true", StringComparison.OrdinalIgnoreCase);
         if (resetReported) _apdEqualizerActive = false;
-        if (kv.TryGetValue("ant", out var ant)) _apdAntenna = ant;
-        if (kv.TryGetValue("freq", out var frequency) && Kv.D(frequency) is { } mhz) _apdFreqMhz = mhz;
-        if (kv.TryGetValue("rfpower", out var power) && int.TryParse(power, out var pct)) _apdPowerSetting = pct;
+        // FlexLib treats freq+ant+equalizer_active as a coherent calibration
+        // heartbeat. Bare 'apd freq=0 ...' is not a calibration identity.
+        if (kv.TryGetValue("ant", out var ant) && !string.IsNullOrWhiteSpace(ant)
+            && kv.ContainsKey("equalizer_active")
+            && kv.TryGetValue("freq", out var frequency) && Kv.D(frequency) is { } mhz)
+        {
+            _apdAntenna = ant;
+            _apdFreqMhz = mhz;
+            _apdPowerSetting = kv.TryGetValue("rfpower", out var power)
+                && int.TryParse(power, out var pct) ? pct : null;
+        }
         if (kv.TryGetValue("sample_index", out var sample) && int.TryParse(sample, out var index)) _apdSampleIndex = index;
         if (kv.TryGetValue("tx_error_mHz", out var txerror) && Kv.D(txerror) is { } txerr) _apdTxErrorMilliHz = txerr;
         if (kv.TryGetValue("rx_error_mHz", out var rxerror) && Kv.D(rxerror) is { } rxerr) _apdRxErrorMilliHz = rxerr;
