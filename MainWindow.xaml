@@ -58,6 +58,8 @@
                             <ToggleButton Content="Network saver" IsChecked="{Binding NetworkSaver}" Padding="10,3" Margin="3,0"
                                           ToolTip="Cuts Companion traffic and rendering load: selective meters, 24 kHz maximum DAX IQ, 10 Hz UI refresh. Useful with two radios or over Wi-Fi/VPN."
                                           WindowChrome.IsHitTestVisibleInChrome="True"/>
+                            <Button Content="PTT select" Padding="10,3" Margin="3,0,3,0"
+                                     Click="OnPttSelect" WindowChrome.IsHitTestVisibleInChrome="True"/>
                             <Button Content="Licences" Padding="10,3" Margin="10,0,3,0"
                                      Click="OnLicenses" WindowChrome.IsHitTestVisibleInChrome="True"/>
                             <Button Content="About" Padding="10,3" Margin="3,0,3,0"
