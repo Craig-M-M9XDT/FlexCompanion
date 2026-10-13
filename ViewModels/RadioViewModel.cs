@@ -212,6 +212,7 @@ public sealed partial class RadioViewModel : ObservableObject
             OnPropertyChanged(nameof(EscNote));
             ScheduleMeterRefresh();
             OnSliceChangedExtras();
+            NotifyApdContextChanged();
         }
     }
 
@@ -681,6 +682,8 @@ public sealed partial class RadioViewModel : ObservableObject
             Slices.Insert(pos, s);
         }
         s.Merge(kv);
+        if (kv.ContainsKey("RF_frequency") || kv.ContainsKey("txant") || kv.ContainsKey("tx") || kv.ContainsKey("in_use"))
+            NotifyApdContextChanged();
         if (_clientStation.TryGetValue(s.ClientHandle, out var st)) s.Station = st;
 
         if (FollowActiveSlice && kv.TryGetValue("active", out var a) && a == "1" && StationMatches(s) && s != SelectedSlice)
