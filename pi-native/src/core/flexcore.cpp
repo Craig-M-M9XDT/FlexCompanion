@@ -167,8 +167,8 @@ public:
     }
 
     void configure(int fft_size) {
-        if (fft_size != 0 && !valid_fft_size(fft_size))
-            throw std::invalid_argument("fft_size must be 0 or a power of two between 64 and 65536");
+        if (fft_size != 0 && (!valid_fft_size(fft_size) || fft_size > cap_))
+            throw std::invalid_argument("fft_size must be a supported power of two no greater than the IQ ring capacity");
         fft_size_.store(fft_size);
     }
 
