@@ -232,7 +232,11 @@ public:
         int n = fft_size_.load();
         if (n == 0) return py::none();
         auto plan = plan_for(n);
-        std::vector<float> re(n), im(n);
+        // Reuse FFT scratch space per worker thread, avoiding two heap
+        // allocations for every spectrum frame. Each thread owns its buffers.
+        thread_local std::vector<float> re, im;
+        re.resize(n);
+        im.resize(n);
         bool ok = false;
         {
             py::gil_scoped_release nogil;
