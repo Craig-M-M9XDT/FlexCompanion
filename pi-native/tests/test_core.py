@@ -90,8 +90,10 @@ def test_engine_latest_frame_only(core):
     assert eng.compute() is not None
     eng.reset()
     assert eng.available == 0 and not eng.is_live(800)
-    with pytest.raises((ValueError, Exception)):
+    with pytest.raises(ValueError):
         eng.configure(1000)
+    with pytest.raises(ValueError):
+        eng.configure(8192)  # FFT cannot exceed the 4096-sample ring buffer
 
 
 @pytest.mark.parametrize("core", BACKENDS)
