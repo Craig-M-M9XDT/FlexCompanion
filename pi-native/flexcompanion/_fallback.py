@@ -233,8 +233,15 @@ class SpectrumEngine:
             if self._count < n or self._version == self._processed:
                 return None
             start = (self._write - n) % self._cap
-            idx = (start + np.arange(n)) % self._cap
-            i = self._i[idx].copy()
-            q = self._q[idx].copy()
+            first = min(n, self._cap - start)
+            # Avoid creating an index array, a modulo array, and temporary
+            # advanced-index copies on every FFT. Copy the ring in two slices.
+            i = np.empty(n, dtype=np.float32)
+            q = np.empty(n, dtype=np.float32)
+            i[:first] = self._i[start:start + first]
+            q[:first] = self._q[start:start + first]
+            if first < n:
+                i[first:] = self._i[:n - first]
+                q[first:] = self._q[:n - first]
             self._processed = self._version
         return _power_db(i, q)
