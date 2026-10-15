@@ -164,8 +164,8 @@ class SpectrumEngine:
         self._n = 0
 
     def configure(self, fft_size: int) -> None:
-        if fft_size != 0 and not _valid_size(fft_size):
-            raise ValueError("fft_size must be 0 or a power of two between 64 and 65536")
+        if fft_size != 0 and (not _valid_size(fft_size) or fft_size > self._cap):
+            raise ValueError("fft_size must be a supported power of two no greater than the IQ ring capacity")
         self._n = fft_size
 
     @property
