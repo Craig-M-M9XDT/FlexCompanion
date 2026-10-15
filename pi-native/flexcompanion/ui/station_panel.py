@@ -5,7 +5,7 @@ from typing import Callable, List
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem,
-                               QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget)
+                               QPushButton, QMessageBox, QScrollArea, QSizePolicy, QVBoxLayout, QWidget)
 
 from ..session import RadioSession
 from ..station import BANDS, MODES, StationController
@@ -40,7 +40,8 @@ class QuickControls(QWidget):
         self.byp.clicked.connect(station.atu_bypass)
         self.tune = button("TUNE", checkable=True, role="danger")
         self.tune.clicked.connect(lambda: station.toggle_tune())
-        self.mox = button("MOX", checkable=True, role="danger")
+        self.mox = button("PTT / MOX", checkable=True, role="danger")
+        self.mox.setToolTip("Software PTT via FLEX xmit; radio interlocks remain authoritative.")
         self.mox.clicked.connect(lambda: station.toggle_mox())
         lay.addWidget(grid([self.atu, self.byp, self.tune, self.mox], 4))
         station.subscribe(self.refresh)
@@ -81,6 +82,9 @@ class StationPanel(QScrollArea):
 
         qcard, ql = card("Quick radio controls")
         ql.addWidget(QuickControls(station, BANDS, MODES))
+        ptt_help = button("PTT v4.3 audio-source setup")
+        ptt_help.clicked.connect(self._ptt_43_info)
+        ql.addWidget(ptt_help)
         self.status = label("", "dim")
         self.status.setWordWrap(True)
         ql.addWidget(self.status)
@@ -275,6 +279,20 @@ class StationPanel(QScrollArea):
         self.pg_status.setText(f"Power Genius XL: {self.st.pgxl_status}")
         self.pg_alert.setText(self.st.amp_alert)
         self.pg_disconnect.setEnabled(self.st.pgxl.connected or self.st.pgxl_status not in ("Not connected", "Disconnected"))
+
+    def _ptt_43_info(self) -> None:
+        QMessageBox.information(
+            self,
+            "SmartSDR 4.3 hardware PTT",
+            "SmartSDR v4.3 changes the audio-source behaviour for rear RCA, ACC and mic PTT.\\n\\n"
+            "PTT Override OFF (default): hardware PTT uses the currently selected PC Mic, "
+            "DAX or analogue audio source.\\n\\n"
+            "PTT Override ON: hardware PTT switches to the last analogue mic input.\\n\\n"
+            "Set this in SmartSDR: Settings > Radio Setup > Phone/CW > PTT Override "
+            "(or Menu > Phone/CW on M-model/Maestro).\\n\\n"
+            "The PTT / MOX control above is software PTT, not the hardware override. "
+            "This app does not send an unverified PTT Override API command.",
+        )
 
     def _target(self, slot: str) -> None:
         self.st.set_target(slot)
