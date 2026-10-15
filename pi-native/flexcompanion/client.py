@@ -133,11 +133,22 @@ class FlexClient:
 
     def send(self, command: str, timeout: float = 5.0) -> Reply:
         """Blocking send. Never call from the TCP reader thread."""
+        from concurrent.futures import TimeoutError as FutureTimeoutError
         fut = self.send_async(command)
         try:
             return fut.result(timeout)
-        except Exception:  # noqa: BLE001 - timeout
-            return (NO_REPLY, "no reply")
+        except FutureTimeoutError:
+            # A timed-out reply must not remain in the pending map indefinitely.
+            # Remove by identity so a concurrent response cannot remove another command.
+            with self._pending_lock:
+                for seq, pending in list(self._pending.items()):
+                    if pending is fut:
+                        del self._pending[seq]
+                        break
+            if not fut.done():
+                fut.set_result((NO_REPLY, "no reply"))
+            return fut.result()
+
 
     def send_no_reply(self, command: str) -> bool:
         """Best-effort write used during shutdown; the reply is intentionally unmatched."""
@@ -155,21 +166,25 @@ class FlexClient:
         reason = "connection closed by radio"
         tcp = self._tcp
         buf = b""
+        max_line_bytes = 1024 * 1024
         try:
             while not self._closed and tcp is not None:
                 chunk = tcp.recv(65536)
                 if not chunk:
                     break
-                buf += chunk
-                while True:
-                    nl = buf.find(b"\n")
-                    if nl < 0:
-                        break
-                    line = buf[:nl].rstrip(b"\r").decode("ascii", "replace")
-                    buf = buf[nl + 1:]
+                # Process complete lines in one pass rather than repeatedly
+                # reallocating the unconsumed receive buffer for each line.
+                parts = (buf + chunk).split(b"\n")
+                buf = parts.pop()
+                if len(buf) > max_line_bytes:
+                    raise ValueError("radio sent oversized TCP status line")
+                for raw in parts:
+                    if len(raw) > max_line_bytes:
+                        raise ValueError("radio sent oversized TCP status line")
+                    line = raw.rstrip(b"\r").decode("ascii", "replace")
                     if line:
                         self._handle_line(line)
-        except OSError as ex:
+        except (OSError, ValueError) as ex:
             reason = str(ex) or reason
         self._fail_pending("disconnected")
         if not self._closed:
