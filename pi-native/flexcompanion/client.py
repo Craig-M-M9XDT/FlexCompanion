@@ -145,8 +145,12 @@ class FlexClient:
                     if pending is fut:
                         del self._pending[seq]
                         break
-            if not fut.done():
+            # The reader may complete the Future between the check and the write.
+            from concurrent.futures import InvalidStateError
+            try:
                 fut.set_result((NO_REPLY, "no reply"))
+            except InvalidStateError:
+                pass
             return fut.result()
 
 
