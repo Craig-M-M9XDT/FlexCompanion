@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace FlexCompanion.Flex;
 
@@ -40,14 +41,14 @@ public sealed class IqAnalyzer : IDisposable
         get
         {
             long last = Interlocked.Read(ref _lastPacketTicks);
-            return last != 0 && (DateTime.UtcNow.Ticks - last) < TimeSpan.FromMilliseconds(800).Ticks;
+            return last != 0 && Stopwatch.GetElapsedTime(last) < TimeSpan.FromMilliseconds(800);
         }
     }
 
     /// <summary>Configure background FFT size and display-rate ceiling. Set fftSize to 0 to pause work.</summary>
     public void Configure(int fftSize, int targetFps)
     {
-        if (fftSize != 0 && (fftSize < 64 || (fftSize & (fftSize - 1)) != 0))
+        if (fftSize != 0 && (fftSize < 64 || fftSize > Capacity || (fftSize & (fftSize - 1)) != 0))
             throw new ArgumentOutOfRangeException(nameof(fftSize));
         Volatile.Write(ref _requestedN, fftSize);
         Volatile.Write(ref _targetFps, Math.Clamp(targetFps, 5, 60));
@@ -101,7 +102,7 @@ public sealed class IqAnalyzer : IDisposable
             _write = (_write + count) % Capacity;
             _count = Math.Min(Capacity, _count + count);
             _sampleVersion++;
-            Interlocked.Exchange(ref _lastPacketTicks, DateTime.UtcNow.Ticks);
+            Interlocked.Exchange(ref _lastPacketTicks, Stopwatch.GetTimestamp());
         }
     }
 
