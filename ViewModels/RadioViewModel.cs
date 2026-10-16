@@ -212,6 +212,7 @@ public sealed partial class RadioViewModel : ObservableObject
             OnPropertyChanged(nameof(EscNote));
             ScheduleMeterRefresh();
             OnSliceChangedExtras();
+            NotifyApdContextChanged();
         }
     }
 
@@ -315,7 +316,7 @@ public sealed partial class RadioViewModel : ObservableObject
             if (udp.Code != 0)
                 LastMessage = $"Meter stream registration failed ({FlexClient.ErrorText(udp.Code)}). Controls still work.";
 
-            foreach (var sub in new[] { "sub client all", "sub slice all", "sub pan all", "sub tx all", "sub amplifier all", "sub license all" })
+            foreach (var sub in new[] { "sub client all", "sub slice all", "sub pan all", "sub tx all", "sub amplifier all", "sub license all", "sub apd all" })
                 await c.SendAsync(sub);
 
             // Do not subscribe to every meter. A typical FLEX session exposes dozens of meters,
@@ -420,6 +421,7 @@ public sealed partial class RadioViewModel : ObservableObject
         Interlocked.Exchange(ref _meterUiPending, 0);
         _interlockTx = false;
         _licenseFeatures.Clear();
+        ClearApdState();
         AmplifierHandle = AmplifierModel = AmplifierIp = AmplifierState = "";
         AmplifierOperate = false;
         OnPropertyChanged(nameof(LicenseSummary));
@@ -437,6 +439,7 @@ public sealed partial class RadioViewModel : ObservableObject
     {
         var kv = Kv.Parse(Kv.Tokenize(msg.Replace(',', ' ')));
         var model = kv.GetValueOrDefault("model") ?? "";
+        OnApdRadioInfo(model);
         var name = kv.GetValueOrDefault("nickname") ?? kv.GetValueOrDefault("name") ?? "";
         var serial = kv.GetValueOrDefault("chassis_serial") ?? kv.GetValueOrDefault("serial") ?? "";
         serial = serial.Trim().Trim('"');
@@ -636,6 +639,7 @@ public sealed partial class RadioViewModel : ObservableObject
     void OnStatus(string body)
     {
         if (body.StartsWith("meter ", StringComparison.Ordinal)) { HandleMeterStatus(body[6..]); return; }
+        if (body.StartsWith("apd ", StringComparison.OrdinalIgnoreCase)) { OnApdStatus(body); return; }
 
         var tok = Kv.Tokenize(body);
         if (tok.Count == 0) return;
@@ -678,6 +682,8 @@ public sealed partial class RadioViewModel : ObservableObject
             Slices.Insert(pos, s);
         }
         s.Merge(kv);
+        if (kv.ContainsKey("RF_frequency") || kv.ContainsKey("txant") || kv.ContainsKey("tx") || kv.ContainsKey("in_use"))
+            NotifyApdContextChanged();
         if (_clientStation.TryGetValue(s.ClientHandle, out var st)) s.Station = st;
 
         if (FollowActiveSlice && kv.TryGetValue("active", out var a) && a == "1" && StationMatches(s) && s != SelectedSlice)
@@ -968,6 +974,15 @@ public sealed partial class RadioViewModel : ObservableObject
             AddOptional(MultiNeedle3);
         }
         else AddOptional(TxMeter);
+
+        // The separate APD window needs its own radio TX-chain samples even if
+        // the main panel uses a power/SWR-only meter layout.
+        if (_apdMonitorActive)
+        {
+            Add(_micId);
+            Add(_compId);
+            Add(_alcId);
+        }
         return ids;
     }
 

@@ -19,6 +19,8 @@
        Exclude that source tree from the root WPF project's SDK-default globbing. -->
   <ItemGroup>
     <Compile Remove="Pi\**\*.cs" />
+    <!-- Separate self-contained localhost-only radio test server, not a WPF source file. -->
+    <Compile Remove="APD-Simulator\**\*.cs" />
     <Page Remove="Pi\**\*.xaml" />
     <ApplicationDefinition Remove="Pi\**\*.xaml" />
   </ItemGroup>

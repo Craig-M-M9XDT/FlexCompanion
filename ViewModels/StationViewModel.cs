@@ -78,7 +78,12 @@ public sealed class StationViewModel : ObservableObject, IDisposable
         DxDisconnectCommand = new RelayCommand(_dx.Disconnect);
         TuneSpotCommand = new RelayCommand(async p => { if (p is SpotItem s) await TuneSpotAsync(s); });
         PgxlConnectCommand = new RelayCommand(async () => await ConnectPgxlAsync());
-        PgxlDisconnectCommand = new RelayCommand(_pgxl.Disconnect);
+        PgxlDisconnectCommand = new RelayCommand(() =>
+        {
+            _pgxl.Disconnect();
+            PgxlStatus = "Disconnected";
+            OnPropertyChanged(nameof(PgxlConnected));
+        });
         AmpOperateCommand = new RelayCommand(async () => await ToggleAmpAsync());
 
         _dx.AutoReconnect = _settings.DxClusterAutoReconnect;
@@ -93,8 +98,8 @@ public sealed class StationViewModel : ObservableObject, IDisposable
         };
 
         _pgxl.AutoReconnect = _settings.PgxlAutoReconnect;
-        _pgxl.Connected += () => { PgxlStatus = $"Connected · v{_pgxl.Version}"; };
-        _pgxl.Disconnected += () => { PgxlStatus = "Disconnected"; };
+        _pgxl.Connected += () => { PgxlStatus = $"Connected · v{_pgxl.Version}"; OnPropertyChanged(nameof(PgxlConnected)); };
+        _pgxl.Disconnected += () => { PgxlStatus = "Disconnected"; OnPropertyChanged(nameof(PgxlConnected)); };
         _pgxl.Error += e => { PgxlStatus = e; Status = $"Amplifier: {e}"; };
         _pgxl.Alert += a => AmpAlert = a;
         _pgxl.Status += ApplyPgxlStatus;
@@ -161,6 +166,7 @@ public sealed class StationViewModel : ObservableObject, IDisposable
     }
     public int PgxlPort { get => _settings.PgxlPort; set { _settings.PgxlPort = Math.Clamp(value, 1, 65535); OnPropertyChanged(); } }
     public string PgxlStatus { get => _pgxlStatus; private set => Set(ref _pgxlStatus, value); }
+    public bool PgxlConnected => _pgxl.IsConnected;
     public string AmpAlert { get => _ampAlert; private set => Set(ref _ampAlert, value); }
     public double AmpPower { get => _ampPower; private set => Set(ref _ampPower, value); }
     public double AmpSwr { get => _ampSwr; private set => Set(ref _ampSwr, value); }
