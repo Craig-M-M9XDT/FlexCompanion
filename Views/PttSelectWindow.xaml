@@ -1,0 +1,24 @@
+<Window x:Class="FlexCompanion.Views.PttSelectWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:FlexCompanion.Views"
+        Title="Flex Control Companion — PTT Select"
+        Width="760" Height="590" MinWidth="620" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Bg0Brush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="12"
+        Icon="/FlexCompanion;component/Assets/FlexCompanionIcon.png">
+    <Grid Margin="12">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock Text="PTT SELECT" FontSize="18" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+        <TabControl Grid.Row="1" Margin="0,14,0,9">
+            <TabItem Header="RADIO A"><v:PttSelectPanel DataContext="{Binding SlotA}"/></TabItem>
+            <TabItem Header="RADIO B"><v:PttSelectPanel DataContext="{Binding SlotB}"/></TabItem>
+        </TabControl>
+        <DockPanel Grid.Row="2">
+            <TextBlock Text="The radio controls PTT, RF transmission and TX interlocks."
+                       Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+            <Button Content="Close" DockPanel.Dock="Right" Padding="20,6" Click="OnClose"/>
+        </DockPanel>
+    </Grid>
+</Window>
