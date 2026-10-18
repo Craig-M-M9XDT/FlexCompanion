@@ -799,30 +799,34 @@ public sealed partial class RadioViewModel
             // The radio's selected microphone source (including BAL) can be
             // exported through DAX MIC without changing PTT or TX routing.
             if (_radioMicStreamId == 0) _ = EnsureRadioMicAsync();
+            var txWindow = DaxSpectrumWindow;
+            string txMode = (SelectedSlice?.Mode ?? "").ToUpperInvariant();
+            bool lowerSideband = txMode is "LSB" or "DIGL" or "FDVL";
             if (_radioMicStreamId != 0 && !((SelectedSlice?.Mode ?? "").StartsWith("DIG", StringComparison.OrdinalIgnoreCase))
                 && _radioMic.IsLive && _radioMic.Spectrum() is { } mic)
             {
                 const int displayBins = 512;
                 var audioBins = new float[displayBins];
-                double span = DaxSpectrumWindow.SpanHz;
+                double span = txWindow.SpanHz;
                 for (int k = 0; k < displayBins; k++)
                 {
-                    double hz = ((k + 0.5) / displayBins - 0.5) * span;
-                    int idx = (int)Math.Round(hz * 2048 / AudioAnalyzer.SampleRate);
+                    double rfHz = txWindow.CentreOffsetHz + ((k + 0.5) / displayBins - 0.5) * span;
+                    double audioHz = lowerSideband ? -rfHz : rfHz;
+                    int idx = (int)Math.Round(audioHz * 2048 / AudioAnalyzer.SampleRate);
                     audioBins[k] = idx >= 0 && idx < mic.Length ? mic[idx] : -160f;
                 }
                 SpectrumMaxHz = span * 0.5;
-                SpectrumCenterOffsetHz = 0;
+                SpectrumCenterOffsetHz = txWindow.CentreOffsetHz;
                 SpectrumStatus = "TX Audio FFT · radio DAX MIC (not RF)";
                 Spectrum = audioBins;
                 return;
             }
             // Read-only Windows DAX TX WASAPI loopback. Do not claim this is RF.
             if (!_txAudioLoopback.IsRunning) _txAudioLoopback.Start();
-            if (_txAudioLoopback.TrySpectrum(DaxSpectrumWindow.SpanHz, out var txAudio, out var halfSpan))
+            if (_txAudioLoopback.TrySpectrum(txWindow.SpanHz, out var txAudio, out var halfSpan, txWindow.CentreOffsetHz, lowerSideband))
             {
                 SpectrumMaxHz = halfSpan;
-                SpectrumCenterOffsetHz = 0;
+                SpectrumCenterOffsetHz = txWindow.CentreOffsetHz;
                 SpectrumStatus = "TX Audio FFT · DAX TX loopback (not RF)";
                 Spectrum = txAudio;
             }
