@@ -182,7 +182,7 @@ public sealed partial class RadioViewModel
         return unit switch
         {
             "dbm" or "db" or "dbfs" or "swr" => raw / 128.0,
-            "volts" or "amps" => raw / 1024.0,
+            "volts" or "amps" => raw / 256.0,
             "degc" => raw / 64.0,
             "degf" => (raw / 64.0 - 32) * 5 / 9,
             _ => raw,
