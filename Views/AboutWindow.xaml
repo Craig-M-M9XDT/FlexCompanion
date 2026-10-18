@@ -63,7 +63,8 @@ The companion app can connect to one or two radios simultaneously. The AGC-T hel
 
         <DockPanel Grid.Row="2" Margin="0,12,0,0" LastChildFill="False">
             <TextBlock DockPanel.Dock="Left" Text="Flex Control Companion © Craig Magee M9XDT" Foreground="{StaticResource TextMuteBrush}" VerticalAlignment="Center"/>
-            <Button DockPanel.Dock="Right" Content="Close" Width="110" Padding="12,5" IsDefault="True" Click="OnClose"/>\n            <Button DockPanel.Dock="Right" Content="♥ Donate via PayPal" ToolTip="Optional donation to support Flex Control Companion development" Margin="0,0,10,0" Padding="12,5" Click="OnDonate"/>
+            <Button DockPanel.Dock="Right" Content="Close" Width="110" Padding="12,5" IsDefault="True" Click="OnClose"/>
+            <Button DockPanel.Dock="Right" Content="♥ Donate via PayPal" ToolTip="Optional donation to support Flex Control Companion development" Margin="0,0,10,0" Padding="12,5" Click="OnDonate"/>
         </DockPanel>
     </Grid>
 </Window>
