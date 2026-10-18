@@ -799,7 +799,8 @@ public sealed partial class RadioViewModel
             // The radio's selected microphone source (including BAL) can be
             // exported through DAX MIC without changing PTT or TX routing.
             if (_radioMicStreamId == 0) _ = EnsureRadioMicAsync();
-            if (_radioMicStreamId != 0 && _radioMic.IsLive && _radioMic.Spectrum() is { } mic)
+            if (_radioMicStreamId != 0 && !((SelectedSlice?.Mode ?? "").StartsWith("DIG", StringComparison.OrdinalIgnoreCase))
+                && _radioMic.IsLive && _radioMic.Spectrum() is { } mic)
             {
                 const int displayBins = 512;
                 var audioBins = new float[displayBins];
