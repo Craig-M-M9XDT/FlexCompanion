@@ -2,7 +2,7 @@ name: Build and publish Flex Control Companion v0.6.4
 
 on:
   push:
-    branches: [ main, branding-v0.6.4 ]
+    branches: [ branding-v0.6.4 ]
     paths:
       - '.github/workflows/publish-v0.6.4.yml'
       - 'FlexCompanion.csproj'
