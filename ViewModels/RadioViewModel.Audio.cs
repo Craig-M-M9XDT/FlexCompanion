@@ -12,6 +12,7 @@ public sealed partial class RadioViewModel
 {
     readonly AudioAnalyzer _audio = new();
     readonly IqAnalyzer _iq = new();
+    readonly TxAudioLoopback _txAudioLoopback = new();
     readonly AgcTCalibrator _agc = new();
     volatile uint _daxStreamId, _iqStreamId;
     int _daxChannel, _iqChannel;
@@ -217,7 +218,7 @@ public sealed partial class RadioViewModel
         if (ShowFft && _fftEnabledAt == DateTime.MinValue) _fftEnabledAt = DateTime.UtcNow;
         SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
         _iq.Configure(ShowFft ? FftSize : 0, LowBandwidthMode ? 20 : 30);
-        if (!ShowFft) { Spectrum = null; _specAvg = null; _lastIqSpectrumSequence = 0; }
+        if (!ShowFft) { _txAudioLoopback.Stop(); Spectrum = null; _specAvg = null; _lastIqSpectrumSequence = 0; }
         _ = EnsureIqStreamAsync();
         _ = EnsureAudioStreamAsync();
     }
@@ -724,6 +725,7 @@ public sealed partial class RadioViewModel
         if (_fftWasTransmitting != IsTransmitting)
         {
             _fftWasTransmitting = IsTransmitting;
+            if (!IsTransmitting) _txAudioLoopback.Stop();
             _specAvg = null;
             Spectrum = null;
             _lastIqSpectrumSequence = 0;
@@ -753,8 +755,20 @@ public sealed partial class RadioViewModel
         // of displaying (or waiting on) RX DAX IQ under a misleading label.
         if (IsTransmitting)
         {
-            SpectrumStatus = "TX · no TX pan FFT delivered to Companion (RX DAX IQ cannot show TX)";
-            Spectrum = null;
+            // Read-only Windows DAX TX WASAPI loopback. Do not claim this is RF.
+            if (!_txAudioLoopback.IsRunning) _txAudioLoopback.Start();
+            if (_txAudioLoopback.TrySpectrum(DaxSpectrumWindow.SpanHz, out var txAudio, out var halfSpan))
+            {
+                SpectrumMaxHz = halfSpan;
+                SpectrumCenterOffsetHz = 0;
+                SpectrumStatus = "TX Audio FFT · DAX TX loopback (not RF)";
+                Spectrum = txAudio;
+            }
+            else
+            {
+                SpectrumStatus = "TX Audio FFT · " + _txAudioLoopback.Status + " (no live samples)";
+                Spectrum = null;
+            }
             return;
         }
 
