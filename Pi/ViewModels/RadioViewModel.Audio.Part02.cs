@@ -141,6 +141,52 @@ public sealed partial class RadioViewModel
         return uint.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out id) && id != 0;
     }
 
+
+    uint _lastNativePanIndex, _lastNativePanStream;
+
+    bool TryGetFreshNativePan(out AetherPanBridge.PanFrame? result)
+    {
+        result = null;
+        var client = _client;
+        if (!ShowFft || client == null) return false;
+        // Prefer the radio's TX slice when transmitting, but fall back to the selected slice.
+        var slice = IsTransmitting
+            ? Slices.FirstOrDefault(s => s.State.GetValueOrDefault("tx") == "1") ?? SelectedSlice
+            : SelectedSlice;
+        if (slice == null || !TryHexStreamId(slice.Pan, out var streamId)
+            || !client.NativePanFft.Latest.TryGetValue(streamId, out var native)
+            || (DateTime.UtcNow - native.ReceivedUtc).TotalMilliseconds > 900) return false;
+
+        var state = _pans.GetValueOrDefault(slice.Pan);
+        double min = -130, max = -40, pixels = 700;
+        if (state != null)
+        {
+            if (Kv.D(state.GetValueOrDefault("min_dbm")) is double lo) min = lo;
+            if (Kv.D(state.GetValueOrDefault("max_dbm")) is double hi) max = hi;
+            if (Kv.D(state.GetValueOrDefault("y_pixels")) is double yp && yp >= 2) pixels = yp;
+        }
+        if (max <= min) return false;
+        var bins = new float[native.Pixels.Length];
+        for (int k = 0; k < bins.Length; k++)
+            bins[k] = (float)(max - native.Pixels[k] * (max - min) / (pixels - 1));
+        result = new AetherPanBridge.PanFrame(_radioSerial, streamId, bins,
+            native.FrameIndex, native.ReceivedUtc, 0);
+        return true;
+    }
+
+    void ApplyNativePan(AetherPanBridge.PanFrame frame)
+    {
+        if (_lastNativePanStream == frame.StreamId && _lastNativePanIndex == (uint)frame.Sequence)
+            return;
+        _lastNativePanStream = frame.StreamId;
+        _lastNativePanIndex = (uint)frame.Sequence;
+        SpectrumStatus = IsTransmitting
+            ? "TX · native radio pan FFT (all modes; not calibrated RF feedback)"
+            : "RX · native radio pan FFT";
+        _specAvg = null;
+        Spectrum = ResliceAetherPan(frame);
+    }
+
     bool TryGetFreshAetherFrame(out AetherPanBridge.PanFrame? frame)
     {
         frame = null;
