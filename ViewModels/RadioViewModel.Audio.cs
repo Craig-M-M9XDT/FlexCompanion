@@ -361,7 +361,7 @@ public sealed partial class RadioViewModel
         if (aether.Sequence == _lastAetherPanSequence) return;
         _lastAetherPanSequence = aether.Sequence;
         if (_iqStreamId != 0 && !_aetherTakeoverBusy) _ = StopDaxIqForAetherAsync();
-        SpectrumStatus = "Aether shared pan · source-paced radio FFT · no extra DAX IQ stream";
+        SpectrumStatus = IsTransmitting\n            ? "TX · Aether shared radio pan FFT (un-calibrated; mode-independent)"\n            : "RX · Aether shared radio pan FFT · no extra DAX IQ stream";
         _specAvg = null; // radio/Aether pan averaging is already baked into these bins
         Spectrum = ResliceAetherPan(aether);
     }
@@ -694,7 +694,7 @@ public sealed partial class RadioViewModel
 
         if (!_iq.IsLive)
         {
-            SpectrumStatus = $"DAX IQ {_iqChannel}: waiting for I/Q…";
+            SpectrumStatus = IsTransmitting\n                ? $"TX active · RX DAX IQ {_iqChannel} unavailable; awaiting TX-capable pan FFT"\n                : $"DAX IQ {_iqChannel}: waiting for I/Q…";
             Spectrum = null;
             return;
         }
