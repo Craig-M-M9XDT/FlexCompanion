@@ -717,6 +717,13 @@ public sealed partial class RadioViewModel
     {
         if (!ShowFft) return;
 
+        // Prefer radio-native complete pan FFT frames when they are delivered to this client.
+        if (TryGetFreshNativePan(out var native) && native != null)
+        {
+            ApplyNativePan(native);
+            return;
+        }
+
         // Aether relay path: consume the radio's panadapter FFT that Aether already has.
         // No IQ buffering, no local FFT and no additional radio bandwidth.
         if (TryGetFreshAetherFrame(out var aether) && aether != null)
