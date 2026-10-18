@@ -56,6 +56,8 @@ public sealed class SpectrumView : FrameworkElement
     readonly int[] _wfPixels = new int[WfCols * WfRows];
     static readonly int[] Palette = BuildPalette();
     double _floor = double.NaN;
+    double _ceiling = double.NaN;
+    double DynamicRange => Math.Max(RangeDb, _ceiling - Bottom);
 
     static T Frozen<T>(T f) where T : Freezable { f.Freeze(); return f; }
 
@@ -125,6 +127,13 @@ public sealed class SpectrumView : FrameworkElement
         }
         double f = lo + (bucket + 0.5) * (hi - lo) / hist.Length;
         _floor = double.IsNaN(_floor) ? f : _floor + (f - _floor) * 0.05;
+        // Smooth peak tracking gives strong TX modulation headroom.
+        float peak = -180f;
+        for (int i = 0; i < count; i++)
+            if (float.IsFinite(s[i])) peak = Math.Max(peak, s[i]);
+        double targetCeiling = Math.Max(Bottom + RangeDb, peak + 8);
+        _ceiling = double.IsNaN(_ceiling) ? targetCeiling
+            : _ceiling + (targetCeiling - _ceiling) * (targetCeiling > _ceiling ? 0.65 : 0.08);
     }
 
     double Bottom => (double.IsNaN(_floor) ? -110 : _floor) - 10;
@@ -142,7 +151,7 @@ public sealed class SpectrumView : FrameworkElement
             int b0 = x * bins / WfCols, b1 = Math.Max(b0 + 1, (x + 1) * bins / WfCols);
             float m = float.MinValue;
             for (int b = b0; b < b1 && b < s.Length; b++) m = Math.Max(m, s[b]);
-            int idx = (int)Math.Clamp((m - bottom) / RangeDb * 255, 0, 255);
+            int idx = (int)Math.Clamp((m - bottom) / DynamicRange * 255, 0, 255);
             _wfPixels[x] = Palette[idx];
         }
         _wf.WritePixels(new Int32Rect(0, 0, WfCols, WfRows), _wfPixels, WfCols * 4, 0);
@@ -223,7 +232,7 @@ public sealed class SpectrumView : FrameworkElement
                     for (int j = 1; j < step && b + j < bins; j++) m = Math.Max(m, s[b + j]);
                     double x = Centered ? b / (double)Math.Max(1, bins - 1) * w
                                         : b * binHz / MaxHz * w;
-                    double y = specH - Math.Clamp((m - bottom) / RangeDb, 0, 1) * (specH - 4);
+                    double y = specH - Math.Clamp((m - bottom) / DynamicRange, 0, 1) * (specH - 4);
                     ctx.LineTo(new Point(x, y), true, true);
                 }
                 ctx.LineTo(new Point(w, specH), true, false);
