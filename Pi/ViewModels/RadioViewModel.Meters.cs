@@ -166,7 +166,10 @@ public sealed partial class RadioViewModel
             else if (n.Equals("MICPEAK", StringComparison.OrdinalIgnoreCase) && (_micId < 0 || cod)) _micId = d.Id;
             else if (n.Equals("COMPPEAK", StringComparison.OrdinalIgnoreCase) && (_compId < 0 || cod)) _compId = d.Id;
             else if (n.Equals("+13.8A", StringComparison.OrdinalIgnoreCase)) _vddId = d.Id;
-            else if (!amp && n.Equals("PACURRENT", StringComparison.OrdinalIgnoreCase)) _ampsId = d.Id;
+            else if (!amp && (n.Equals("PACURRENT", StringComparison.OrdinalIgnoreCase)
+                       || n.Equals("PA_CURRENT", StringComparison.OrdinalIgnoreCase)
+                       || n.Equals("PA CUR", StringComparison.OrdinalIgnoreCase)))
+                _ampsId = d.Id;
             else if (!amp && n.Equals("PATEMP", StringComparison.OrdinalIgnoreCase)) _tempId = d.Id;
         }
         _meterMapDirty = false;
@@ -179,7 +182,7 @@ public sealed partial class RadioViewModel
         return unit switch
         {
             "dbm" or "db" or "dbfs" or "swr" => raw / 128.0,
-            "volts" or "amps" => raw / 256.0,
+            "volts" or "amps" => raw / 1024.0,
             "degc" => raw / 64.0,
             "degf" => (raw / 64.0 - 32) * 5 / 9,
             _ => raw,

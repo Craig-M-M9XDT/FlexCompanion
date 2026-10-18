@@ -59,8 +59,7 @@ public sealed partial class RadioViewModel
     public RelayCommand AssignDaxCommand => _assignDax ??= new RelayCommand(AssignDax, () => IsConnected && SelectedSlice != null);
     public RelayCommand AgcAutoCommand => _agcAuto ??= new RelayCommand(StartAgcSweep, () => IsConnected && SelectedSlice != null && !_agc.IsRunning && !_agcPreparingSweep);
     public RelayCommand AgcKeepCommand => _agcKeep ??= new RelayCommand(() => { _agc.Keep(); RestoreAgcFilters(); AgcChanged(); }, () => _agc.Recommended >= 0 && !_agc.IsRunning);
-    public RelayCommand AgcRestoreCommand => _agcRestore ??= new RelayCommand(() => { _agcRunEpoch++; _agcPreparingSweep = false; _agc.Stop(); _agcWaitingForAudio = false; RestoreAgcFilters(); AgcChanged(); ReleaseAudioIfUnused(); },
-                                                                               () => _agc.IsRunning || _agc.Recommended >= 0 || _agcWaitingForAudio || _agcPreparingSweep);
+    public RelayCommand AgcRestoreCommand => _agcRestore ??= new RelayCommand(() => { _agcRunEpoch++; _agcPreparingSweep = false; _agc.Stop(); _agcWaitingForAudio = false; RestoreAgcFilters(); AgcChanged(); }, () => _agc.IsRunning || _agc.Recommended >= 0 || _agcWaitingForAudio || _agcPreparingSweep);
 
     // ───────────────────────── FFT window ─────────────────────────
 
@@ -361,7 +360,9 @@ public sealed partial class RadioViewModel
         if (aether.Sequence == _lastAetherPanSequence) return;
         _lastAetherPanSequence = aether.Sequence;
         if (_iqStreamId != 0 && !_aetherTakeoverBusy) _ = StopDaxIqForAetherAsync();
-        SpectrumStatus = "Aether shared pan · source-paced radio FFT · no extra DAX IQ stream";
+        SpectrumStatus = IsTransmitting
+            ? "TX · Aether shared radio pan FFT (un-calibrated; mode-independent)"
+            : "RX · Aether shared radio pan FFT · no extra DAX IQ stream";
         _specAvg = null; // radio/Aether pan averaging is already baked into these bins
         Spectrum = ResliceAetherPan(aether);
     }
@@ -694,7 +695,9 @@ public sealed partial class RadioViewModel
 
         if (!_iq.IsLive)
         {
-            SpectrumStatus = $"DAX IQ {_iqChannel}: waiting for I/Q…";
+            SpectrumStatus = IsTransmitting
+                ? $"TX active · RX DAX IQ {_iqChannel} unavailable; awaiting TX-capable pan FFT"
+                : $"DAX IQ {_iqChannel}: waiting for I/Q…";
             Spectrum = null;
             return;
         }

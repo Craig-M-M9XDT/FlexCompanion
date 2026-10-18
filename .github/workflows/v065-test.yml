@@ -1,0 +1,25 @@
+name: v0.6.5 TX and meter test build
+on:
+  push:
+    branches: [feature/v0.6.5-tx-spectrum-amps]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet build FlexCompanion.csproj -c Release --nologo
+  raspberry-pi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet build Pi/FlexCompanion.Pi.csproj -c Release --nologo

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -30,6 +31,19 @@ public partial class AboutWindow : Window
         catch (Exception ex)
         {
             return $"{fallback}\n\nRead error: {ex.Message}";
+        }
+    }
+
+    private void OnDonate(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://paypal.me/CraigM9XDT") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Unable to open PayPal: {ex.Message}", "Donation link",
+                MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 

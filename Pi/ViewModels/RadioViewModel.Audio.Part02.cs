@@ -169,7 +169,7 @@ public sealed partial class RadioViewModel
         if (aether.Sequence == _lastAetherPanSequence) return;
         _lastAetherPanSequence = aether.Sequence;
         if (_iqStreamId != 0 && !_aetherTakeoverBusy) _ = StopDaxIqForAetherAsync();
-        SpectrumStatus = "Aether shared pan · source-paced radio FFT · no extra DAX IQ stream";
+        SpectrumStatus = IsTransmitting ? "TX · Aether shared radio pan FFT (un-calibrated; any mode)" : "RX · Aether shared radio pan FFT";
         _specAvg = null;
         Spectrum = ResliceAetherPan(aether);
     }
