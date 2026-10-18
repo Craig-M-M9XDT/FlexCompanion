@@ -173,11 +173,14 @@ public sealed class FlexClient : IDisposable
     /// VITA-49 meter packet: 28-byte header (class id present, packet class code 0x8002
     /// in bytes 14-15), then N x { uint16 meter id, int16 raw value }, all big-endian.
     /// </summary>
+    public PanFftDecoder NativePanFft { get; } = new();
+
     void ParseVita(byte[] d)
     {
         if (d.Length < 28) return;
         if ((d[0] & 0x08) == 0) return;                 // no class id -> not a meter packet
         int pcc = (d[14] << 8) | d[15];
+        if (pcc == 0x8003) { NativePanFft.Push(d); return; }
         if (pcc == 0x03E3 || pcc == 0x0123) { ParseAudio(d, pcc); return; }
         if (pcc is 0x02E3 or 0x02E4 or 0x02E5 or 0x02E6) { ParseIq(d); return; }
         if (pcc != 0x8002) return;
