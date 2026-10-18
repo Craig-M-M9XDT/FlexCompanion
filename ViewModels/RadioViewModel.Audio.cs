@@ -713,9 +713,21 @@ public sealed partial class RadioViewModel
     /// UI-thread presentation tick. FFT math itself runs in IqAnalyzer's background worker;
     /// this method only consumes the newest completed frame. No backlog is ever queued.
     /// </summary>
+    bool _fftWasTransmitting;
+
     void OnFftTick()
     {
         if (!ShowFft) return;
+
+        // Clear stale RX frames and smoothing at each TX/RX transition. DAX IQ
+        // is receive-only and must never be presented as a TX measurement.
+        if (_fftWasTransmitting != IsTransmitting)
+        {
+            _fftWasTransmitting = IsTransmitting;
+            _specAvg = null;
+            Spectrum = null;
+            _lastIqSpectrumSequence = 0;
+        }
 
         // Prefer radio-native complete pan FFT frames when they are delivered to this client.
         if (TryGetFreshNativePan(out var native) && native != null)
@@ -736,6 +748,16 @@ public sealed partial class RadioViewModel
 
         // If Aether wasn't present at enable/connect time, fall back to the original DAX-IQ
         // path after the short probe window. A later Aether frame automatically takes over.
+        // TX source selection is complete above. If neither native nor
+        // bridged pan provides fresh frames, report the missing TX feed instead
+        // of displaying (or waiting on) RX DAX IQ under a misleading label.
+        if (IsTransmitting)
+        {
+            SpectrumStatus = "TX · no TX pan FFT delivered to Companion (RX DAX IQ cannot show TX)";
+            Spectrum = null;
+            return;
+        }
+
         if (_iqStreamId == 0)
         {
             if (_fftEnabledAt == DateTime.MinValue) _fftEnabledAt = DateTime.UtcNow;
