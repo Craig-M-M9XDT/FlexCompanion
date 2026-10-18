@@ -29,7 +29,7 @@ public sealed partial class RadioViewModel
 
         if (!_iq.IsLive)
         {
-            SpectrumStatus = $"DAX IQ {_iqChannel}: waiting for I/Q…";
+            SpectrumStatus = IsTransmitting ? $"TX active · DAX IQ {_iqChannel} is RX-only; waiting for TX pan FFT" : $"DAX IQ {_iqChannel}: waiting for I/Q…";
             Spectrum = null;
             return;
         }
