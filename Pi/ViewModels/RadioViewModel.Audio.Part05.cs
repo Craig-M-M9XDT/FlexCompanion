@@ -7,9 +7,21 @@ namespace FlexCompanion.ViewModels;
 public sealed partial class RadioViewModel
 {
 
+    bool _fftWasTransmitting;
+
     void OnFftTick()
     {
         if (!ShowFft) return;
+
+        // Clear stale RX frames and smoothing at each TX/RX transition. DAX IQ
+        // is receive-only and must never be presented as a TX measurement.
+        if (_fftWasTransmitting != IsTransmitting)
+        {
+            _fftWasTransmitting = IsTransmitting;
+            _specAvg = null;
+            Spectrum = null;
+            _lastIqSpectrumSequence = 0;
+        }
 
         if (TryGetFreshNativePan(out var native) && native != null)
         {
@@ -20,6 +32,16 @@ public sealed partial class RadioViewModel
         if (TryGetFreshAetherFrame(out var aether) && aether != null)
         {
             ApplyAetherPanFrame(aether);
+            return;
+        }
+
+        // TX source selection is complete above. If neither native nor
+        // bridged pan provides fresh frames, report the missing TX feed instead
+        // of displaying (or waiting on) RX DAX IQ under a misleading label.
+        if (IsTransmitting)
+        {
+            SpectrumStatus = "TX · no TX pan FFT delivered to Companion (RX DAX IQ cannot show TX)";
+            Spectrum = null;
             return;
         }
 
