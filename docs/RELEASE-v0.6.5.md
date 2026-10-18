@@ -31,3 +31,10 @@ Builds are self-contained. Source and attribution are included in repository.
 - During transmission, the native path attempts to follow the TX slice and maps radio pixel bins through panadapter dBm metadata.
 - **Radio/firmware limitation:** A non-GUI Companion connection may not receive panadapter packets belonging to SmartSDR's GUI client. Native decoder support does not ensure a TX trace until access to an eligible radio stream is verified in situ.
 - PA current remains unsupported where firmware does not advertise a valid measurement. VDD and About fixes are preserved.
+
+## Windows TX audio FFT fallback
+- When the radio provides no native RF TX pan FFT, Windows Companion listens read-only to the DAX Audio TX playback endpoint using WASAPI loopback.
+- During TX, incoming audio samples are displayed as **TX Audio FFT (not RF)**. On RX the original DAX IQ FFT resumes automatically.
+- Does not modify WSJT-X audio output, DAX TX routing, radio PTT or FlexRadio API stream ownership.
+- The Windows DAX TX playback device must be installed and actively receiving audio. FT8 via DAX TX is the primary test case; physical microphone and CW RF monitoring are not covered by this audio path.
+- The TX audio FFT is not a measurement of the actual transmitted RF spectrum, harmonic suppression, or IMD.
