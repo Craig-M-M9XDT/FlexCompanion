@@ -11,6 +11,12 @@ public sealed partial class RadioViewModel
     {
         if (!ShowFft) return;
 
+        if (TryGetFreshNativePan(out var native) && native != null)
+        {
+            ApplyNativePan(native);
+            return;
+        }
+
         if (TryGetFreshAetherFrame(out var aether) && aether != null)
         {
             ApplyAetherPanFrame(aether);
