@@ -61,7 +61,7 @@ public sealed class TxAudioLoopback : IDisposable
         int bytesPerSample = bits / 8;
         int frameBytes = bytesPerSample * channels;
         bool floating = fmt.Encoding == WaveFormatEncoding.IeeeFloat
-            || (fmt is WaveFormatExtensible ext && ext.SubFormat == AudioMediaSubtypes.MEDIASUBTYPE_IEEE_FLOAT);
+            || (fmt is WaveFormatExtensible ext && ext.SubFormat == new Guid("00000003-0000-0010-8000-00aa00389b71"));
         lock (_gate)
         {
             for (int offset = 0; offset + frameBytes <= e.BytesRecorded; offset += frameBytes)
