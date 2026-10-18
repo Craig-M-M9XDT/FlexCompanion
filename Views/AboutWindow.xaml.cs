@@ -1,5 +1,6 @@
 using System;
-using System.IO;\nusing System.Diagnostics;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 namespace FlexCompanion.Views;
@@ -33,5 +34,18 @@ public partial class AboutWindow : Window
         }
     }
 
-    private void OnDonate(object sender, RoutedEventArgs e)\n    {\n        try { Process.Start(new ProcessStartInfo("https://paypal.me/CraigM9XDT") { UseShellExecute = true }); }\n        catch (Exception ex) { MessageBox.Show(this, $"Unable to open PayPal: {ex.Message}", "Donation link", MessageBoxButton.OK, MessageBoxImage.Information); }\n    }\n\n    private void OnClose(object sender, RoutedEventArgs e) => Close();
+    private void OnDonate(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://paypal.me/CraigM9XDT") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Unable to open PayPal: {ex.Message}", "Donation link",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private void OnClose(object sender, RoutedEventArgs e) => Close();
 }
