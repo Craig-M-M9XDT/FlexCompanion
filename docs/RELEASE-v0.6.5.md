@@ -18,3 +18,9 @@
 - Raspberry Pi ARM64: FlexControlCompanion-v0.6.5-pi-arm64.tar.gz
 
 Builds are self-contained. Source and attribution are included in repository.
+
+## Rebuilt v0.6.5 correction (18 October 2026)
+- Fixed the Windows About dialog crash caused by a stray literal newline escape in XAML.
+- Restored correct voltage/current meter scaling on Windows and Raspberry Pi (addresses VDD reading approximately one-quarter of actual voltage).
+- PA current reporting depends on compatible radio firmware/meter support; no synthetic amperage is displayed.
+- Download files were rebuilt and replaced under the existing v0.6.5 release tag. Re-download and replace your prior installation.
