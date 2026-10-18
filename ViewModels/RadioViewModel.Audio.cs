@@ -13,6 +13,45 @@ public sealed partial class RadioViewModel
     readonly AudioAnalyzer _audio = new();
     readonly IqAnalyzer _iq = new();
     readonly TxAudioLoopback _txAudioLoopback = new();
+    readonly AudioAnalyzer _radioMic = new();
+    uint _radioMicStreamId;
+    bool _radioMicOpening;
+    DateTime _lastMicAttempt = DateTime.MinValue;
+    string _radioMicStatus = "not requested";
+
+    async Task EnsureRadioMicAsync()
+    {
+        if (!ShowFft || _client == null || _radioMicStreamId != 0 || _radioMicOpening
+            || (DateTime.UtcNow - _lastMicAttempt).TotalSeconds < 12) return;
+        _lastMicAttempt = DateTime.UtcNow;
+        _radioMicOpening = true;
+        var c = _client;
+        try
+        {
+            var (code, message) = await c.SendAsync("stream create type=dax_mic");
+            if (_client != c) return;
+            if (code != 0 || !TryStreamId(message, out uint id))
+            {
+                _radioMicStatus = $"DAX MIC unavailable ({FlexClient.ErrorText(code)})";
+                return;
+            }
+            _radioMicStreamId = id;
+            _radioMic.Reset();
+            _radioMicStatus = $"DAX MIC stream 0x{id:X8}";
+        }
+        catch (Exception ex) { _radioMicStatus = "DAX MIC error: " + ex.Message; }
+        finally { _radioMicOpening = false; }
+    }
+
+    async Task RemoveRadioMicAsync()
+    {
+        uint id = _radioMicStreamId;
+        _radioMicStreamId = 0;
+        _radioMic.Reset();
+        if (id != 0 && _client is { } c)
+            try { await c.SendAsync($"stream remove 0x{id:X8}"); } catch { }
+    }
+
     readonly AgcTCalibrator _agc = new();
     volatile uint _daxStreamId, _iqStreamId;
     int _daxChannel, _iqChannel;
@@ -218,9 +257,10 @@ public sealed partial class RadioViewModel
         if (ShowFft && _fftEnabledAt == DateTime.MinValue) _fftEnabledAt = DateTime.UtcNow;
         SpectrumMaxHz = DaxSpectrumWindow.SpanHz * 0.5;
         _iq.Configure(ShowFft ? FftSize : 0, LowBandwidthMode ? 20 : 30);
-        if (!ShowFft) { _txAudioLoopback.Stop(); Spectrum = null; _specAvg = null; _lastIqSpectrumSequence = 0; }
+        if (!ShowFft) { _ = RemoveRadioMicAsync(); _txAudioLoopback.Stop(); Spectrum = null; _specAvg = null; _lastIqSpectrumSequence = 0; }
         _ = EnsureIqStreamAsync();
         _ = EnsureAudioStreamAsync();
+        if (ShowFft) _ = EnsureRadioMicAsync();
     }
 
     // ── DAX RX audio for Best AGC-T ───────────────────────────────
@@ -315,6 +355,7 @@ public sealed partial class RadioViewModel
     void OnAudioPacket(uint streamId, float[] samples)
     {
         if (streamId != 0 && streamId == _daxStreamId) _audio.Push(samples);
+        if (streamId != 0 && streamId == _radioMicStreamId) _radioMic.Push(samples);
     }
 
     // ── Aether shared-pan feed for compact spectrum ──────────────
@@ -755,6 +796,26 @@ public sealed partial class RadioViewModel
         // of displaying (or waiting on) RX DAX IQ under a misleading label.
         if (IsTransmitting)
         {
+            // The radio's selected microphone source (including BAL) can be
+            // exported through DAX MIC without changing PTT or TX routing.
+            if (_radioMicStreamId == 0) _ = EnsureRadioMicAsync();
+            if (_radioMicStreamId != 0 && _radioMic.IsLive && _radioMic.Spectrum() is { } mic)
+            {
+                const int displayBins = 512;
+                var audioBins = new float[displayBins];
+                double span = DaxSpectrumWindow.SpanHz;
+                for (int k = 0; k < displayBins; k++)
+                {
+                    double hz = ((k + 0.5) / displayBins - 0.5) * span;
+                    int idx = (int)Math.Round(hz * 2048 / AudioAnalyzer.SampleRate);
+                    audioBins[k] = idx >= 0 && idx < mic.Length ? mic[idx] : -160f;
+                }
+                SpectrumMaxHz = span * 0.5;
+                SpectrumCenterOffsetHz = 0;
+                SpectrumStatus = "TX Audio FFT · radio DAX MIC (not RF)";
+                Spectrum = audioBins;
+                return;
+            }
             // Read-only Windows DAX TX WASAPI loopback. Do not claim this is RF.
             if (!_txAudioLoopback.IsRunning) _txAudioLoopback.Start();
             if (_txAudioLoopback.TrySpectrum(DaxSpectrumWindow.SpanHz, out var txAudio, out var halfSpan))
@@ -766,7 +827,7 @@ public sealed partial class RadioViewModel
             }
             else
             {
-                SpectrumStatus = "TX Audio FFT · " + _txAudioLoopback.Status + " (no live samples)";
+                SpectrumStatus = "TX Audio FFT · " + _radioMicStatus + "; " + _txAudioLoopback.Status + " (no live samples)";
                 Spectrum = null;
             }
             return;
@@ -1074,6 +1135,8 @@ public sealed partial class RadioViewModel
         if (_iqPanAssigned && _iqPanId.Length > 0 && _client is { } cc)
             cc.TrySendNoReply($"display pan set {_iqPanId} daxiq_channel=0");
         _iqStreamId = 0; _iqChannel = 0; _iqPanId = ""; _iqPanAssigned = false; _iqLost = false;
+        _radioMicStreamId = 0; _radioMic.Reset(); _radioMicStatus = "not requested";
+        _txAudioLoopback.Stop();
         _audio.Reset(); _iq.Reset();
         _iq.Configure(0, LowBandwidthMode ? 20 : 30);
         _lastIqSpectrumSequence = 0;
