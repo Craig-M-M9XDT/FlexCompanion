@@ -24,3 +24,10 @@ Builds are self-contained. Source and attribution are included in repository.
 - Restored correct voltage/current meter scaling on Windows and Raspberry Pi (addresses VDD reading approximately one-quarter of actual voltage).
 - PA current reporting depends on compatible radio firmware/meter support; no synthetic amperage is displayed.
 - Download files were rebuilt and replaced under the existing v0.6.5 release tag. Re-download and replace your prior installation.
+
+## Native TX panadapter experiment (18 October 2026)
+- Added mode-independent, native VITA-49 PCC 0x8003 panadapter FFT reception and full-frame bin assembly on Windows and Raspberry Pi.
+- Native pan source is preferred when packets arrive; the existing Aether relay and RX DAX IQ fallback remain intact.
+- During transmission, the native path attempts to follow the TX slice and maps radio pixel bins through panadapter dBm metadata.
+- **Radio/firmware limitation:** A non-GUI Companion connection may not receive panadapter packets belonging to SmartSDR's GUI client. Native decoder support does not ensure a TX trace until access to an eligible radio stream is verified in situ.
+- PA current remains unsupported where firmware does not advertise a valid measurement. VDD and About fixes are preserved.
