@@ -84,7 +84,7 @@ public sealed class TxAudioLoopback : IDisposable
         }
     }
 
-    public bool TrySpectrum(double spanHz, out float[] spectrum, out double maxHz)
+    public bool TrySpectrum(double spanHz, out float[] spectrum, out double maxHz, double centreHz = 0, bool lowerSideband = false)
     {
         spectrum = Array.Empty<float>();
         maxHz = Math.Max(500, spanHz / 2);
@@ -129,8 +129,9 @@ public sealed class TxAudioLoopback : IDisposable
         double hzPerBin = (double)_rate / N;
         for (int i = 0; i < displayBins; i++)
         {
-            double offsetHz = ((i + 0.5) / displayBins - 0.5) * spanHz;
-            int k = (int)Math.Round(offsetHz / hzPerBin);
+            double rfOffsetHz = centreHz + ((i + 0.5) / displayBins - 0.5) * spanHz;
+            double audioHz = lowerSideband ? -rfOffsetHz : rfOffsetHz;
+            int k = (int)Math.Round(audioHz / hzPerBin);
             spectrum[i] = k >= 0 && k < N / 2
                 ? (float)(20 * Math.Log10(Math.Max(1e-9, data[k].Magnitude / N)))
                 : -160;
