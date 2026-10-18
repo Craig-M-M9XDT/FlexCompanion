@@ -57,7 +57,8 @@ public sealed class SpectrumView : FrameworkElement
     static readonly int[] Palette = BuildPalette();
     double _floor = double.NaN;
     double _ceiling = double.NaN;
-    double DynamicRange => Math.Max(RangeDb, _ceiling - Bottom);
+    double DisplayBottom => Math.Max(Bottom, (double.IsNaN(_ceiling) ? Bottom + RangeDb : _ceiling) - 80);
+    double DynamicRange => Math.Max(RangeDb, _ceiling - DisplayBottom);
 
     static T Frozen<T>(T f) where T : Freezable { f.Freeze(); return f; }
 
@@ -145,7 +146,7 @@ public sealed class SpectrumView : FrameworkElement
         int bins = VisibleBins(s);
         UpdateFloor(s, bins);
         Array.Copy(_wfPixels, 0, _wfPixels, WfCols, WfCols * (WfRows - 1));   // scroll down one row
-        double bottom = Bottom;
+        double bottom = DisplayBottom;
         for (int x = 0; x < WfCols; x++)
         {
             int b0 = x * bins / WfCols, b1 = Math.Max(b0 + 1, (x + 1) * bins / WfCols);
@@ -219,7 +220,7 @@ public sealed class SpectrumView : FrameworkElement
         if (s != null && s.Length >= 16)
         {
             int bins = VisibleBins(s);
-            double bottom = Bottom;
+            double bottom = DisplayBottom;
             double binHz = Centered ? SampleRate / s.Length : SampleRate / ((s.Length - 1) * 2);
             var g = new StreamGeometry();
             using (var ctx = g.Open())
