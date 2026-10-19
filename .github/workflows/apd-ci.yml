@@ -1,0 +1,58 @@
+name: APD development preview — Windows build
+
+on:
+  pull_request:
+    paths:
+      - 'FlexCompanion.csproj'
+      - 'Flex/**'
+      - 'Services/**'
+      - 'Station/**'
+      - 'ViewModels/**'
+      - 'APD-Simulator/**'
+      - 'Views/**'
+      - 'Theme/**'
+      - 'docs/APD-*.md'
+      - '.github/workflows/apd-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Compile and package APD LAB preview (no release)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore, build and publish
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet restore .\FlexCompanion.csproj
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build .\FlexCompanion.csproj -c Release --no-restore -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish .\FlexCompanion.csproj -c Release -r win-x64 --self-contained true -p:Version=0.6.5-apd.2 -p:DefineConstants=APD_LAB -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\apd-preview
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Build the localhost-only, NO-RF virtual FLEX-8600 as a separate executable.
+          dotnet publish .\APD-Simulator\APD-Simulator.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\apd-sim
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item .\dist\apd-sim\APD-Simulator.exe .\dist\apd-preview\APD-Simulator.exe
+          Copy-Item .\docs\APD-DEVELOPMENT-BUILD.md .\dist\apd-preview\READ-ME-FIRST-APD-LAB.md
+          Set-Content .\dist\apd-preview\PREVIEW-BUILD.txt -Value "Flex Control Companion APD LAB 0.6.5-apd.2 | branch: $env:GITHUB_HEAD_REF | commit: $env:GITHUB_SHA | TEST ONLY - NOT AN OFFICIAL RELEASE"
+          Compress-Archive -Path .\dist\apd-preview\* -DestinationPath .\dist\FlexControlCompanion-APD-LAB-v0.6.5-apd.2-win-x64.zip -Force
+          Get-FileHash .\dist\FlexControlCompanion-APD-LAB-v0.6.5-apd.2-win-x64.zip -Algorithm SHA256 | Format-List
+      - name: Offline simulator protocol smoke test (no RF)
+        shell: pwsh
+        run: |
+          .\APD-Simulator\SmokeTest.ps1
+      - name: Upload portable Windows x64 APD test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlexControlCompanion-APD-LAB-v0.6.5-apd.2-win-x64
+          path: dist/FlexControlCompanion-APD-LAB-v0.6.5-apd.2-win-x64.zip
+          if-no-files-found: error
+          retention-days: 30

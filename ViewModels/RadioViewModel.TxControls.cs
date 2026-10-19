@@ -187,6 +187,8 @@ public sealed partial class RadioViewModel
         if (TryInt(kv, "rfpower", out var power))
         {
             power = Math.Clamp(power, 0, 100);
+            _apdTxPowerReported = true;
+            NotifyApdContextChanged();
             if (_txRfPower != power)
             {
                 _txRfPower = power;

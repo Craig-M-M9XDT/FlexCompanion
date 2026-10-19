@@ -7,7 +7,7 @@ public sealed record TxMeterSpec(string Key, string Title, double Min, double Ma
 
 public sealed partial class RadioViewModel
 {
-    int _rxId = -1, _fwdId = -1, _swrId = -1, _micId = -1, _compId = -1, _vddId = -1, _ampsId = -1, _tempId = -1;
+    int _rxId = -1, _fwdId = -1, _swrId = -1, _micId = -1, _compId = -1, _alcId = -1, _vddId = -1, _ampsId = -1, _tempId = -1;
     SlotPrefs _prefs = new();
     double _vdd = double.NaN, _amps = double.NaN, _temp = double.NaN;
 
@@ -233,7 +233,7 @@ public sealed partial class RadioViewModel
 
     void RebuildMeterMap()
     {
-        _rxId = _fwdId = _swrId = _micId = _compId = _vddId = _ampsId = _tempId = -1;
+        _rxId = _fwdId = _swrId = _micId = _compId = _alcId = _vddId = _ampsId = _tempId = -1;
         int slice = SelectedSlice?.Index ?? -1;
         foreach (var d in _meterDefs.Values)
         {
@@ -247,6 +247,7 @@ public sealed partial class RadioViewModel
             else if (tx && n.Equals("SWR", StringComparison.OrdinalIgnoreCase)) _swrId = d.Id;
             else if (n.Equals("MICPEAK", StringComparison.OrdinalIgnoreCase) && (_micId < 0 || cod)) _micId = d.Id;
             else if (n.Equals("COMPPEAK", StringComparison.OrdinalIgnoreCase) && (_compId < 0 || cod)) _compId = d.Id;
+            else if (tx && n.Equals("ALC", StringComparison.OrdinalIgnoreCase)) _alcId = d.Id;
             else if (n.Equals("+13.8A", StringComparison.OrdinalIgnoreCase)) _vddId = d.Id;
             else if (!amp && (n.Equals("PACURRENT", StringComparison.OrdinalIgnoreCase)
                        || n.Equals("PA_CURRENT", StringComparison.OrdinalIgnoreCase)
@@ -314,6 +315,8 @@ public sealed partial class RadioViewModel
             Swr = 1 + (Swr - 1) * 0.6;
             CompDb *= 0.6;
         }
+
+        ApdAlcDb = IsTransmitting && _apdMonitorActive ? Read(_alcId) : double.NaN;
 
         var mic = Read(_micId);
         if (!double.IsNaN(mic)) MicDb = mic;

@@ -46,6 +46,9 @@ public partial class App : Application
             await Task.Delay(1200);
 
             var main = new MainWindow();
+#if APD_LAB
+            main.Title += " — APD LAB DEVELOPMENT / TEST ONLY";
+#endif
             MainWindow = main;
             main.Show();
         }
