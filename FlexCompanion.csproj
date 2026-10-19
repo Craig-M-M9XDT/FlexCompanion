@@ -23,6 +23,7 @@
        Exclude that source tree from the root WPF project's SDK-default globbing. -->
   <ItemGroup>
     <Compile Remove="Pi\**\*.cs" />
+    <Compile Remove="LicenseTests\**\*.cs" />
     <Page Remove="Pi\**\*.xaml" />
     <ApplicationDefinition Remove="Pi\**\*.xaml" />
   </ItemGroup>

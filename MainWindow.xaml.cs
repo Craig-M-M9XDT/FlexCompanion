@@ -9,6 +9,8 @@ namespace FlexCompanion;
 public partial class MainWindow : Window
 {
     readonly MainViewModel _vm;
+    LicenseStatusWindow? _licenceWindow;
+    PttSelectWindow? _pttWindow;
 
     public MainWindow()
     {
@@ -49,6 +51,24 @@ public partial class MainWindow : Window
     void OnMaximize(object sender, RoutedEventArgs e) =>
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
     void OnClose(object sender, RoutedEventArgs e) => Close();
+
+    void OnPttSelect(object sender, RoutedEventArgs e)
+    {
+        if (_pttWindow?.IsVisible == true) { _pttWindow.Activate(); return; }
+        var window = new PttSelectWindow(_vm) { Owner = this };
+        _pttWindow = window;
+        window.Closed += (_, _) => _pttWindow = null;
+        window.Show();
+    }
+
+    void OnLicenses(object sender, RoutedEventArgs e)
+    {
+        if (_licenceWindow?.IsVisible == true) { _licenceWindow.Activate(); return; }
+        var window = new LicenseStatusWindow(_vm) { Owner = this };
+        _licenceWindow = window;
+        window.Closed += (_, _) => _licenceWindow = null;
+        window.Show();
+    }
 
     void OnAbout(object sender, RoutedEventArgs e)
     {
