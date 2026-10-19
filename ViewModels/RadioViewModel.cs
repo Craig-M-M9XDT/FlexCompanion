@@ -316,7 +316,10 @@ public sealed partial class RadioViewModel : ObservableObject
                 LastMessage = $"Meter stream registration failed ({FlexClient.ErrorText(udp.Code)}). Controls still work.";
 
             foreach (var sub in new[] { "sub client all", "sub slice all", "sub pan all", "sub tx all", "sub amplifier all", "sub license all" })
-                await c.SendAsync(sub);
+            {
+                var reply = await c.SendAsync(sub);
+                if (sub == "sub license all") SetLicenseSubscriptionResult(reply.Code);
+            }
 
             // Do not subscribe to every meter. A typical FLEX session exposes dozens of meters,
             // most of which Companion never renders. Build metadata with `meter list` and subscribe
@@ -420,6 +423,7 @@ public sealed partial class RadioViewModel : ObservableObject
         Interlocked.Exchange(ref _meterUiPending, 0);
         _interlockTx = false;
         _licenseFeatures.Clear();
+        ClearLicenseView();
         AmplifierHandle = AmplifierModel = AmplifierIp = AmplifierState = "";
         AmplifierOperate = false;
         OnPropertyChanged(nameof(LicenseSummary));
@@ -646,7 +650,7 @@ public sealed partial class RadioViewModel : ObservableObject
             case "client" when tok.Count > 1: HandleClient(tok); break;
             case "interlock": HandleInterlock(tok); break;
             case "amplifier": HandleAmplifier(tok); break;
-            case "license": HandleLicense(tok); break;
+            case "license": HandleLicenseStatus(body); break;
         }
     }
 
@@ -789,19 +793,7 @@ public sealed partial class RadioViewModel : ObservableObject
         OnPropertyChanged(nameof(HasAmplifier));
     }
 
-    void HandleLicense(List<string> tok)
-    {
-        // Aether policy: do not infer a block from a subscription label alone.
-        // Store explicit feature reports for information only; commands are still
-        // attempted and the radio's response is authoritative.
-        if (tok.Count < 2 || !tok[1].Equals("feature", StringComparison.OrdinalIgnoreCase)) return;
-        var kv = Kv.Parse(tok.Skip(2));
-        var name = kv.GetValueOrDefault("name") ?? "";
-        if (name.Length == 0) return;
-        bool enabled = (kv.GetValueOrDefault("enabled") ?? "0") == "1";
-        _licenseFeatures[name] = (enabled, kv.GetValueOrDefault("reason") ?? "");
-        OnPropertyChanged(nameof(LicenseSummary));
-    }
+
 
     void HandleInterlock(List<string> tok)
     {
