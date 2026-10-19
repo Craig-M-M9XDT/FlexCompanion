@@ -20,6 +20,7 @@ import numpy as np
 
 from . import _core, kv, meters, spectrum
 from .client import NO_REPLY, FlexClient, error_text
+from .ptt_override import PttOverrideState
 from .dispatch import Dispatcher, TimerHandle
 from .params import ParamControl, build_controls
 from .session_aether import AETHER_STATUS, AetherMixin
@@ -99,7 +100,8 @@ ALL_STATIONS = StationItem()
 class RadioSession(AgcMixin, AetherMixin):
     def __init__(self, slot: str, dispatcher: Dispatcher, saver: bool = False,
                  tx_meter: str = "Power", show_fft: bool = False, fft_span_khz: float = 48.0,
-                 agc_target_db: float = -28.0, aether: bool = True):
+                 agc_target_db: float = -28.0, aether: bool = True,
+                 auto_preserve_ptt: bool = True):
         self.slot = slot
         self.d = dispatcher
         self._listeners: List[Callable[[str], None]] = []
@@ -128,6 +130,7 @@ class RadioSession(AgcMixin, AetherMixin):
         self._client_station: Dict[str, str] = {}
         self._bound_client_id = ""
         self._interlock_tx = False
+        self.ptt = PttOverrideState(auto=auto_preserve_ptt)
 
         self.amp_handle = ""
         self.amp_model = ""
@@ -378,6 +381,7 @@ class RadioSession(AgcMixin, AetherMixin):
         self._client_station.clear()
         self._bound_client_id = ""
         self._interlock_tx = False
+        self.ptt.reset()
         self.meter_defs.clear()
         self._meter_subs.clear()
         self._meter_fallback_all = False
@@ -404,6 +408,7 @@ class RadioSession(AgcMixin, AetherMixin):
         self._notify("meters")
         self._notify("spectrum")
         self._notify("amplifier")
+        self._notify("ptt")
 
     def shutdown(self) -> None:
         self.disconnect()
@@ -486,6 +491,11 @@ class RadioSession(AgcMixin, AetherMixin):
         if not tok:
             return
         head = tok[0]
+        if head in ("interlock", "transmit"):
+            cmd = self.ptt.observe(head, kv.parse(tok[1:]))
+            self._notify("ptt")
+            if cmd and self.client is not None:
+                self._send(cmd, self._ptt_write_completed)
         if head == "slice":
             self._handle_slice(tok)
         elif head == "display" and len(tok) > 2 and tok[1] == "pan":
@@ -500,6 +510,19 @@ class RadioSession(AgcMixin, AetherMixin):
             self._handle_amplifier(tok)
         elif head == "license":
             self._handle_license(tok)
+
+    def _ptt_write_completed(self, code: int, message: str) -> None:
+        self.ptt.complete(code)
+        if code:
+            self._set_message(f"PTT Override API rejected: {error_text(code)} [0x{code:08X}]")
+        self._notify("ptt")
+
+    def set_auto_preserve_ptt(self, enabled: bool) -> None:
+        self.ptt.auto = bool(enabled)
+        self._notify("ptt")
+        cmd = self.ptt.maybe_command()
+        if cmd and self.client is not None:
+            self._send(cmd, self._ptt_write_completed)
 
     def _handle_slice(self, tok: List[str]) -> None:
         if len(tok) < 2:

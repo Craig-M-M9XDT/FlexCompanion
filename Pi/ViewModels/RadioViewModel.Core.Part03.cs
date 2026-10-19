@@ -144,6 +144,7 @@ public sealed partial class RadioViewModel
         _lastMeterPacketUtc = DateTime.MinValue;
         Interlocked.Exchange(ref _meterUiPending, 0);
         _interlockTx = false;
+        ResetPttOverrideMonitor();
         _licenseFeatures.Clear();
         AmplifierHandle = AmplifierModel = AmplifierIp = AmplifierState = "";
         AmplifierOperate = false;

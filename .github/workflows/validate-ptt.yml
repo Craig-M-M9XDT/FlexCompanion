@@ -1,0 +1,46 @@
+name: Validate companion PTT feature
+
+on:
+  pull_request:
+    paths:
+      - 'FlexCompanion.csproj'
+      - 'ViewModels/**'
+      - 'Views/**'
+      - 'Services/**'
+      - 'Pi/**'
+      - 'docs/ptt-audio-auto.md'
+      - '.github/workflows/validate-ptt.yml'
+  workflow_dispatch:
+
+jobs:
+  windows-wpf:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build Windows WPF companion
+        run: dotnet build FlexCompanion.csproj -c Release --nologo
+      - name: Publish standalone Windows preview
+        run: dotnet publish FlexCompanion.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist/ptt-windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FCC-PTT-Preview-Windows-x64
+          path: dist/ptt-windows/
+
+  pi-avalonia:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build Raspberry Pi Avalonia companion
+        run: dotnet build Pi/FlexCompanion.Pi.csproj -c Release --nologo
+      - name: Publish standalone Raspberry Pi ARM64 preview
+        run: dotnet publish Pi/FlexCompanion.Pi.csproj -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o dist/ptt-pi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FCC-PTT-Preview-RaspberryPi-ARM64
+          path: dist/ptt-pi/

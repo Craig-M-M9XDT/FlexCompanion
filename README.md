@@ -43,6 +43,10 @@ The compact renderer is trace-only by default (Aether-style). On Windows the ana
 
 The optional Aether source patch is in `AetherBridgePatch/`. It mirrors `RadioModel::panFeedSpectrumReady` to **localhost UDP 7331 only** and does not create another radio pan, slice, DAX assignment or radio stream.
 
+## PC microphone / hardware PTT monitoring
+
+All three builds (Windows, Raspberry Pi Avalonia, native Pi) include a per-radio-slot **Automatic PC audio preservation** preference and live PTT/microphone status. This auto-disables a radio's hardware-microphone override only where the radio explicitly advertises a `ptt_override` API parameter; it never keys TX or bypasses an interlock. **SmartSDR 4.2.20 cannot be fixed by a Companion-side setting alone**, because its physical PTT overrides PC audio internally. Newer firmware supports preserving the audio source by default. Exact third-party API setter syntax still needs live v4.3 validation. See [PTT audio compatibility and diagnostics](docs/ptt-audio-auto.md).
+
 ## Radio features
 
 - NR, NB, ANF, NRF, NRL, NRS, RNN, ANFL and ANFT controls, including levels where the radio exposes one.

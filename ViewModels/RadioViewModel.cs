@@ -419,6 +419,7 @@ public sealed partial class RadioViewModel : ObservableObject
         _lastMeterPacketUtc = DateTime.MinValue;
         Interlocked.Exchange(ref _meterUiPending, 0);
         _interlockTx = false;
+        ResetPttOverrideMonitor();
         _licenseFeatures.Clear();
         AmplifierHandle = AmplifierModel = AmplifierIp = AmplifierState = "";
         AmplifierOperate = false;
@@ -635,6 +636,7 @@ public sealed partial class RadioViewModel : ObservableObject
 
     void OnStatus(string body)
     {
+        OnPttRadioStatus(body);
         if (body.StartsWith("meter ", StringComparison.Ordinal)) { HandleMeterStatus(body[6..]); return; }
 
         var tok = Kv.Tokenize(body);

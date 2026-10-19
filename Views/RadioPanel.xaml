@@ -274,6 +274,23 @@
                         </ScrollViewer>
                     </TabItem>
 
+                    <TabItem Header="PTT &amp; Mic">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="6,8,6,8">
+                                <TextBlock Text="HARDWARE PTT / PC MICROPHONE" Style="{StaticResource Section}"/>
+                                <CheckBox Content="Automatically preserve PC microphone when rear PTT is used"
+                                          IsChecked="{Binding AutoPreservePcPttAudio, Mode=TwoWay}"
+                                          Margin="0,10,0,10"/>
+                                <TextBlock Text="{Binding PttMicSourceStatus}" Style="{StaticResource Hint}" Margin="0,2,0,6"/>
+                                <TextBlock Text="{Binding PttHardwareStatus}" Style="{StaticResource Hint}" Margin="0,2,0,6"/>
+                                <TextBlock Text="{Binding PttOverrideStatus}" TextWrapping="Wrap"
+                                           Foreground="{StaticResource AmberBrush}" Margin="0,8,0,10"/>
+                                <TextBlock Text="Works automatically only when the radio advertises a writable PTT Override API. SmartSDR 4.2.20 overrides PC audio internally and cannot be fixed by a Companion setting alone. Existing TX safety interlocks are never changed."
+                                           Style="{StaticResource Hint}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
                     <TabItem Header="AGC-T">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="4,6,4,4">
